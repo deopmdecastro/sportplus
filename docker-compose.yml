@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sportplus_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sportplus
+      POSTGRES_USER: sportplus
+      POSTGRES_PASSWORD: sportplus
+    ports:
+      - "5433:5432"
+    volumes:
+      - sportplus_postgres_data:/var/lib/postgresql/data
+      - ./backend/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sportplus -d sportplus"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+    container_name: sportplus_api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: postgres://sportplus:sportplus@postgres:5432/sportplus
+      CORS_ORIGIN: http://localhost:5173
+      ADMIN_EMAIL: admin@sportplus.test
+      ADMIN_PASSWORD: Admin@123
+      DEMO_USER_PASSWORD: User@123
+      API_FOOTBALL_KEY: ${API_FOOTBALL_KEY:-}
+      API_FOOTBALL_BASE_URL: ${API_FOOTBALL_BASE_URL:-https://v3.football.api-sports.io}
+      FOOTBALL_FIXTURE_MAP: ${FOOTBALL_FIXTURE_MAP:-{}}
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  sportplus_postgres_data:
