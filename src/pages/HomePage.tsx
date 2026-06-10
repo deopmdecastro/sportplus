@@ -15,8 +15,9 @@ export function HomePage({ data = getMockHomePageData() }: HomePageProps) {
   const fallback = getMockHomePageData()
   const allEvents = [...liveEvents, ...upcomingEvents]
   const featuredEvent = liveEvents.find((event) => event.isFeatured) || liveEvents[0] || upcomingEvents[0] || fallback.liveEvents[0]
-  const featuredGame = games.find((game) => game.isFeatured) || games[0]
-  const heroTags = ['Live', featuredGame?.category || featuredEvent.sport.name, '4K', 'Low latency']
+  const featuredSport = games.find((game) => game.isFeatured) || games[0]
+  const heroImage = featuredEvent.thumbnail || featuredSport?.heroImage
+  const heroTags = ['Ao vivo', featuredSport?.category || featuredEvent.sport.name, 'HD', 'Multicamera']
   const continueWatching = allEvents.length ? allEvents.slice(0, 4) : [...fallback.liveEvents.slice(0, 2), ...fallback.upcomingEvents.slice(0, 2)]
   const recommended = (allEvents.length ? allEvents : [...fallback.liveEvents, ...fallback.upcomingEvents]).filter((event) => event.id !== featuredEvent.id).slice(0, 8)
   const popularThisWeek = [...highlights].sort((a, b) => b.views - a.views).slice(0, 8)
@@ -26,19 +27,19 @@ export function HomePage({ data = getMockHomePageData() }: HomePageProps) {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>sportplus | Gaming Streaming Platform</title>
+        <title>sportplus | Streaming Desportivo Ao Vivo</title>
         <meta name="theme-color" content="#080808" />
         <link rel="canonical" href="https://sportplus.example/" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="sportplus | Gaming Streaming Platform" />
-        <meta property="og:description" content="Streams ao vivo, jogos em alta, criadores e comunidades numa experiencia premium." />
-        <meta property="og:image" content={featuredGame?.heroImage || featuredEvent.thumbnail} />
+        <meta property="og:title" content="sportplus | Streaming Desportivo Ao Vivo" />
+        <meta property="og:description" content="Eventos ao vivo, jogos de futebol, modalidades em destaque e highlights numa experiencia premium." />
+        <meta property="og:image" content={heroImage} />
         <meta property="og:url" content="https://sportplus.example/" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="sportplus | Gaming Streaming Platform" />
-        <meta name="twitter:description" content="Assista streams, descubra jogos e acompanhe criadores em uma plataforma moderna." />
-        <meta name="twitter:image" content={featuredGame?.heroImage || featuredEvent.thumbnail} />
-        <meta name="description" content="Gaming streaming premium com lives, jogos em alta, criadores, comunidades e highlights." />
+        <meta name="twitter:title" content="sportplus | Streaming Desportivo Ao Vivo" />
+        <meta name="twitter:description" content="Assista jogos, descubra eventos e acompanhe canais desportivos em uma plataforma moderna." />
+        <meta name="twitter:image" content={heroImage} />
+        <meta name="description" content="Streaming desportivo premium com eventos ao vivo, jogos de futebol, modalidades, canais e highlights." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -60,18 +61,18 @@ export function HomePage({ data = getMockHomePageData() }: HomePageProps) {
         <Navbar currentPage="home" />
 
         <main>
-          <section class="stream-hero gaming-hero" aria-labelledby="hero-title" style={`--hero-image:url("${featuredGame?.heroImage || featuredEvent.thumbnail}");--game-accent:${featuredGame?.accentColor || '#ef4444'}`}>
-            <img class="stream-hero-bg" src={featuredGame?.heroImage || featuredEvent.thumbnail} alt="" loading="eager" />
+          <section class="stream-hero gaming-hero" aria-labelledby="hero-title" style={`--hero-image:url("${heroImage}");--game-accent:${featuredSport?.accentColor || '#ef4444'}`}>
+            <img class="stream-hero-bg" src={heroImage} alt="" loading="eager" />
             <div class="stream-hero-vignette"></div>
             <div class="stream-hero-content">
               <div class="stream-live-chip">
                 <span></span>
-                Gaming live agora
+                Ao vivo agora
               </div>
-              <h1 id="hero-title">{featuredGame ? `${featuredGame.name} ao vivo na sportplus` : featuredEvent.title}</h1>
-              <p>{featuredGame ? `Descubra transmissões competitivas, criadores em ascensão e comunidades ao vivo em ${featuredGame.category}.` : featuredEvent.description}</p>
+              <h1 id="hero-title">{featuredEvent.title}</h1>
+              <p>{featuredEvent.description || 'Acompanhe jogos, competicoes e canais desportivos com transmissao ao vivo, highlights e agenda completa.'}</p>
               <div class="stream-meta-row" aria-label="Metadados do evento">
-                <span>🎮 {featuredGame?.name || featuredEvent.sport.name}</span>
+                <span>{featuredEvent.sport.icon} {featuredEvent.sport.name}</span>
                 <span>{formatNumber(stats.activeViewers || featuredEvent.viewers || featuredEvent.views || 0)} assistindo</span>
                 <span>HD</span>
                 <span>{featuredEvent.isPremium ? 'Premium' : 'Livre'}</span>
@@ -82,16 +83,16 @@ export function HomePage({ data = getMockHomePageData() }: HomePageProps) {
               <div class="stream-hero-actions">
                 <a class="stream-btn stream-btn-primary" href={`/evento/${featuredEvent.id}`} aria-label={`Assistir ${featuredEvent.title} agora`}>
                   <span class="stream-play-icon">▶</span>
-                  Entrar numa live
+                  Assistir agora
                 </a>
-                <a class="stream-btn stream-btn-secondary" href="/games">Explorar jogos</a>
+                <a class="stream-btn stream-btn-secondary" href="/jogos">Explorar jogos</a>
               </div>
             </div>
             <div class="stream-hero-preview" aria-label="Destaques da plataforma">
               {[
-                { label: 'Streams ao vivo', value: stats.liveStreams || liveEvents.length },
+                { label: 'Eventos ao vivo', value: stats.liveStreams || liveEvents.length },
                 { label: 'Highlights', value: highlights.length },
-                { label: 'Jogos', value: stats.games || games.length },
+                { label: 'Modalidades', value: stats.games || games.length },
               ].map((item) => (
                 <div class="stream-hero-stat" key={item.label}>
                   <strong>{item.value}</strong>
@@ -103,8 +104,8 @@ export function HomePage({ data = getMockHomePageData() }: HomePageProps) {
 
           <section class="gaming-stats-row" aria-label="Metricas da plataforma">
             {[
-              { label: 'Viewers ativos', value: stats.activeViewers },
-              { label: 'Criadores', value: stats.creators },
+              { label: 'Assistindo agora', value: stats.activeViewers },
+              { label: 'Canais', value: stats.creators },
               { label: 'Views totais', value: stats.totalViews },
             ].map((item) => (
               <div class="gaming-stat-tile" key={item.label}>
@@ -116,8 +117,8 @@ export function HomePage({ data = getMockHomePageData() }: HomePageProps) {
 
           <section class="stream-quick-genres" aria-label="Categorias em destaque">
             {games.slice(0, 6).map((game) => (
-              <a href={`/games/${game.slug}`} class="stream-genre-pill gaming-pill" key={game.id}>
-                <span>🎮</span>
+              <a href={`/jogos/${game.slug}`} class="stream-genre-pill gaming-pill" key={game.id}>
+                <span>🏟</span>
                 {game.name}
                 {game.liveStreams > 0 && <b>{game.liveStreams}</b>}
               </a>
@@ -131,22 +132,22 @@ export function HomePage({ data = getMockHomePageData() }: HomePageProps) {
             ))}
           </section>
 
-          <section class="stream-section" aria-labelledby="games-title">
+          <section class="stream-section" aria-labelledby="sports-title">
             <div class="stream-section-head">
               <div>
-                <span>Jogos em alta</span>
-                <h2 id="games-title">Onde a comunidade esta agora</h2>
+                <span>Jogos e modalidades em alta</span>
+                <h2 id="sports-title">Onde o desporto esta agora</h2>
               </div>
-              <a href="/games">Ver catalogo</a>
+              <a href="/jogos">Ver catalogo</a>
             </div>
             <div class="gaming-grid">
               {games.slice(0, 8).map((game) => (
-                <a href={`/games/${game.slug}`} class="gaming-card" style={`--game-accent:${game.accentColor}`} key={game.id}>
+                <a href={`/jogos/${game.slug}`} class="gaming-card" style={`--game-accent:${game.accentColor}`} key={game.id}>
                   <img src={game.cover} alt={game.name} loading="lazy" />
                   <div>
                     <strong>{game.name}</strong>
                     <span>{game.category}</span>
-                    <small>{formatNumber(game.viewers)} viewers · {game.liveStreams} lives</small>
+                    <small>{formatNumber(game.viewers)} assistindo - {game.liveStreams} transmissao{game.liveStreams === 1 ? '' : 'es'}</small>
                   </div>
                 </a>
               ))}
@@ -219,7 +220,7 @@ export function HomePage({ data = getMockHomePageData() }: HomePageProps) {
               <p>Rails horizontais, previews rapidos, historico, canais favoritos e recomendacoes por modalidade ajudam o usuario a encontrar o proximo evento em segundos.</p>
             </div>
             <div class="stream-feature-grid">
-              {['4K Ready', 'Replay', 'Watchlist', 'Sem anuncios'].map((item) => <span key={item}>{item}</span>)}
+              {['HD', 'Replay', 'Watchlist', 'Sem anuncios'].map((item) => <span key={item}>{item}</span>)}
             </div>
           </section>
 
@@ -288,7 +289,7 @@ export function HomePage({ data = getMockHomePageData() }: HomePageProps) {
                 el.textContent = formatCompact(event.views || 0);
               });
               document.querySelectorAll('[data-event-views-label="' + event.id + '"]').forEach((el) => {
-                el.textContent = '👁 ' + formatCompact(event.views || 0);
+                el.textContent = formatCompact(event.views || 0) + ' visualizacoes';
               });
             });
           }

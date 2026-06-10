@@ -85,7 +85,7 @@ export function RegisterPage() {
               <div style="margin-bottom:14px">
                 <label style="display:block;color:rgba(255,255,255,0.5);font-size:12px;font-weight:500;margin-bottom:5px">Esportes favoritos</label>
                 <div style="display:flex;flex-wrap:wrap;gap:6px">
-                  {['⚽ Futebol', '🏀 Basquete', '🥊 MMA', '🎾 Tênis', '🏎️ F1', '🎮 E-Sports'].map(sport => (
+                  {['⚽ Futebol', '🏀 Basquete', '🥊 MMA', '🎾 Tênis', '🏎️ F1', '🚴 Ciclismo'].map(sport => (
                     <label key={sport} style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:50px;padding:5px 10px;cursor:pointer" class="sport-checkbox">
                       <input type="checkbox" style="accent-color:#ef4444" />
                       <span style="color:rgba(255,255,255,0.7);font-size:12px">{sport}</span>

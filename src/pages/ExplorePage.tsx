@@ -42,7 +42,7 @@ export function ExplorePage() {
             <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
               <div style="display:flex;align-items:center;gap:12px">
                 <span style="color:rgba(255,255,255,0.3);font-size:10px;font-weight:600;border:1px solid rgba(255,255,255,0.2);padding:2px 5px;border-radius:3px">AD</span>
-                <span style="color:white;font-size:14px;font-weight:500">🎮 CS2 Major ao vivo agora — <strong>E-Sports Arena</strong> transmitindo!</span>
+                <span style="color:white;font-size:14px;font-weight:500">Final de handebol ao vivo agora — <strong>Arena Handebol</strong> transmitindo!</span>
               </div>
               <a href="/ao-vivo" style="color:#ef4444;font-size:13px;font-weight:700;text-decoration:none">Assistir →</a>
             </div>

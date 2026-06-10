@@ -2411,9 +2411,24 @@ body:has(#admin-guard) {
 }
 
 .admin-sidebar {
+  position: fixed !important;
+  inset: 0 auto 0 0 !important;
+  z-index: 30;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 270px !important;
+  min-height: 100vh !important;
+  padding: 20px 16px !important;
   background: linear-gradient(180deg, rgba(8, 11, 17, 0.98), rgba(5, 7, 11, 0.98)) !important;
   border-right: 1px solid rgba(255, 255, 255, 0.11) !important;
   box-shadow: 18px 0 60px rgba(0, 0, 0, 0.36);
+}
+
+#admin-tabs {
+  display: flex !important;
+  flex: 1 1 auto;
+  flex-direction: column !important;
+  gap: 4px;
 }
 
 .admin-brand {
@@ -2497,6 +2512,8 @@ body:has(#admin-guard) {
 }
 
 .admin-main {
+  min-height: 100vh;
+  margin-left: 270px !important;
   padding: 28px 30px 24px !important;
 }
 
@@ -3101,19 +3118,48 @@ body[data-admin-section="events"] .admin-modal-actions {
 }
 
 .admin-event-form .admin-field-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
   min-height: 0;
   padding: 12px;
   border-radius: 10px;
 }
 
 .admin-event-form .admin-field-card span {
-  margin-bottom: 7px;
+  display: block;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 10px !important;
+  line-height: 1;
 }
 
 .admin-event-form input,
 .admin-event-form textarea,
 .admin-event-form select {
   min-height: 42px;
+  width: 100%;
+  min-width: 0;
+  color: #fff;
+  caret-color: #ff3b3b;
+}
+
+.admin-event-form select,
+.admin-event-form .admin-native-select {
+  appearance: none;
+  padding: 0 36px 0 0 !important;
+  border: 0 !important;
+  background:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.75) 50%) calc(100% - 16px) 50% / 6px 6px no-repeat,
+    linear-gradient(135deg, rgba(255, 255, 255, 0.75) 50%, transparent 50%) calc(100% - 11px) 50% / 6px 6px no-repeat,
+    transparent !important;
+  color: #fff !important;
+}
+
+.admin-event-form select option,
+.admin-native-select option {
+  color: #fff;
+  background: #151922;
 }
 
 .admin-event-form textarea {
@@ -3176,7 +3222,7 @@ body[data-admin-section="events"] .admin-modal-actions {
 
 .admin-event-server-row {
   display: grid;
-  grid-template-columns: 84px minmax(100px, 0.42fr) minmax(180px, 1fr) 38px;
+  grid-template-columns: minmax(112px, 0.35fr) minmax(220px, 1fr) 38px;
   gap: 8px;
   align-items: center;
 }
@@ -3245,7 +3291,7 @@ body[data-admin-section="events"] .admin-modal-actions {
   }
 }
 
-/* Premium gaming streaming layer */
+/* Premium sports streaming layer */
 .gaming-hero {
   border-bottom: 1px solid color-mix(in srgb, var(--game-accent, #ef4444) 35%, rgba(255, 255, 255, 0.08));
 }

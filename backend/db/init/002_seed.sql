@@ -4,16 +4,18 @@ insert into sports (id, name, slug, icon, color, "liveCount", "totalEvents") val
   ('3', 'UFC/MMA', 'mma', 'luta', '#ef4444', 2, 85),
   ('4', 'Tenis', 'tenis', 'raquete', '#eab308', 6, 180),
   ('5', 'Formula 1', 'formula1', 'carro', '#e11d48', 1, 44),
-  ('8', 'E-Sports', 'esports', 'game', '#8b5cf6', 15, 520),
+  ('8', 'Volei', 'volei', 'bola', '#3b82f6', 4, 96),
   ('10', 'Ciclismo', 'ciclismo', 'bike', '#10b981', 1, 60)
 on conflict (id) do nothing;
 
 insert into games (id, name, slug, category, cover, "heroImage", "accentColor", "liveStreams", viewers, followers, "isFeatured") values
-  ('game_valorant', 'Valorant', 'valorant', 'Tactical FPS', 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=900&q=80', 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1600&q=80', '#ff4655', 42, 184000, 2200000, true),
-  ('game_fortnite', 'Fortnite', 'fortnite', 'Battle Royale', 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=900&q=80', 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1600&q=80', '#7c3aed', 37, 142000, 3100000, true),
-  ('game_cs2', 'Counter-Strike 2', 'counter-strike-2', 'FPS', 'https://images.unsplash.com/photo-1606318313647-17e72e977753?w=900&q=80', 'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=1600&q=80', '#f59e0b', 58, 212000, 2800000, false),
-  ('game_lol', 'League of Legends', 'league-of-legends', 'MOBA', 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=900&q=80', 'https://images.unsplash.com/photo-1542751110-97427bbecf20?w=1600&q=80', '#38bdf8', 64, 268000, 4200000, true),
-  ('game_minecraft', 'Minecraft', 'minecraft', 'Sandbox', 'https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=900&q=80', 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1600&q=80', '#22c55e', 24, 91000, 1900000, false)
+  ('sport_football', 'Futebol', 'futebol', 'Jogos ao vivo', 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=900&q=80', 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1600&q=80', '#22c55e', 12, 248000, 3400000, true),
+  ('sport_champions', 'Liga dos Campeoes', 'liga-dos-campeoes', 'Futebol europeu', 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=900&q=80', 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1600&q=80', '#3b82f6', 6, 186000, 2600000, true),
+  ('sport_basketball', 'Basquete', 'basquete', 'Ligas e finais', 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=900&q=80', 'https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=1600&q=80', '#f97316', 8, 124000, 1800000, false),
+  ('sport_formula_1', 'Formula 1', 'formula-1', 'Grandes premios', 'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?w=900&q=80', 'https://images.unsplash.com/photo-1541447271487-09612b3f49f7?w=1600&q=80', '#ef4444', 4, 204000, 2100000, true),
+  ('sport_ufc', 'UFC/MMA', 'ufc-mma', 'Combates ao vivo', 'https://images.unsplash.com/photo-1555597673-b21d5c935865?w=900&q=80', 'https://images.unsplash.com/photo-1569517282132-25d22f4573e6?w=1600&q=80', '#dc2626', 2, 68000, 1200000, false),
+  ('sport_tennis', 'Tenis', 'tenis', 'Torneios internacionais', 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=900&q=80', 'https://images.unsplash.com/photo-1542144582-1ba00456b5e3?w=1600&q=80', '#eab308', 5, 42800, 840000, false),
+  ('sport_cycling', 'Ciclismo', 'ciclismo', 'Etapas e grandes voltas', 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=900&q=80', 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=1600&q=80', '#10b981', 1, 18500, 360000, false)
 on conflict (id) do nothing;
 
 insert into users (id, name, email, role, plan, "followersCount", "followingCount", "createdAt", "isVerified", avatar) values
@@ -29,13 +31,13 @@ insert into channels (id, name, slug, description, avatar, banner, owner_id, spo
   ('3', 'UFC BR', 'ufc-br', 'Tudo sobre MMA e UFC', 'https://api.dicebear.com/7.x/shapes/svg?seed=UFCBR', '', '1', '3', 63000, true, true, 1800000),
   ('4', 'Tennis World', 'tennis-world', 'Tenis mundial ao vivo', 'https://api.dicebear.com/7.x/shapes/svg?seed=TennisWorld', '', '2', '4', 41000, false, false, 980000),
   ('5', 'F1 Nation', 'f1-nation', 'Formula 1 em alta velocidade', 'https://api.dicebear.com/7.x/shapes/svg?seed=F1Nation', '', '1', '5', 198000, true, false, 8100000),
-  ('6', 'E-Sports Arena', 'esports-arena', 'O maior canal de e-sports do Brasil', 'https://api.dicebear.com/7.x/shapes/svg?seed=ESportsArena', '', '2', '8', 312000, true, true, 12500000)
+  ('6', 'Volei Brasil', 'volei-brasil', 'Jogos, ligas e highlights de volei', 'https://api.dicebear.com/7.x/shapes/svg?seed=VoleiBrasil', '', '2', '8', 112000, true, true, 4200000)
 on conflict (id) do nothing;
 
 insert into events (id, title, description, thumbnail, sport_id, channel_id, status, "startTime", viewers, likes, views, tags, "isFeatured", "isPremium", teams) values
   ('1', 'Flamengo vs Palmeiras - Brasileirao', 'Classico nacional pelo Campeonato Brasileiro', 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&q=80', '1', '1', 'live', now(), 48320, 12400, 248000, '["brasileirao","flamengo","palmeiras","futebol"]', true, false, '{"home":{"name":"Flamengo","logo":"FLA","score":2},"away":{"name":"Palmeiras","logo":"PAL","score":1}}'),
   ('2', 'UFC 300 - Campeonato Peso Mosca', 'Disputa do cinturao peso mosca', 'https://images.unsplash.com/photo-1549476464-37392f717541?w=800&q=80', '3', '3', 'live', now(), 31200, 8900, 89000, '["ufc","mma","luta"]', true, false, '{"home":{"name":"Alexandre Pantoja","logo":"BR"},"away":{"name":"Brandon Royval","logo":"US"}}'),
-  ('3', 'CS2 Major - Grand Final', 'Grande final do CS2 Major', 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80', '8', '6', 'live', now(), 127500, 42100, 890000, '["cs2","esports","major"]', true, false, '{"home":{"name":"FURIA","logo":"FUR","score":14},"away":{"name":"Natus Vincere","logo":"NAVI","score":11}}'),
+  ('3', 'Superliga de Volei - Final', 'Final nacional com as melhores equipas da temporada', 'https://images.unsplash.com/photo-1592656094267-764a45160876?w=800&q=80', '8', '6', 'live', now(), 76500, 22100, 390000, '["volei","final","superliga"]', true, false, '{"home":{"name":"Benfica","logo":"BEN","score":2},"away":{"name":"Sporting","logo":"SCP","score":1}}'),
   ('4', 'NBA Finals - Game 7', 'Jogo decisivo das Finais da NBA', 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80', '2', '2', 'live', now(), 89400, 28700, 412000, '["nba","basquete","finals"]', false, true, '{"home":{"name":"Boston Celtics","logo":"BOS","score":102},"away":{"name":"Golden State","logo":"GSW","score":98}}'),
   ('5', 'Gran Premio de Monaco - F1', 'Corrida de Formula 1 em Monaco', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80', '5', '5', 'live', now(), 204000, 91200, 1800000, '["f1","formula1","monaco"]', true, false, null),
   ('7', 'Copa Libertadores - Final', 'Final da Libertadores da America', 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80', '1', '1', 'upcoming', now() + interval '2 hours', 0, 4500, 0, '["libertadores","final","futebol"]', true, false, null),

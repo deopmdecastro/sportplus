@@ -12,7 +12,7 @@ export const sports: Sport[] = [
   { id: '5', name: 'Fórmula 1', slug: 'formula1', icon: '🏎️', color: '#e11d48', liveCount: 1, totalEvents: 44 },
   { id: '6', name: 'Vôlei', slug: 'volei', icon: '🏐', color: '#3b82f6', liveCount: 4, totalEvents: 120 },
   { id: '7', name: 'Natação', slug: 'natacao', icon: '🏊', color: '#06b6d4', liveCount: 3, totalEvents: 90 },
-  { id: '8', name: 'E-Sports', slug: 'esports', icon: '🎮', color: '#8b5cf6', liveCount: 15, totalEvents: 520 },
+  { id: '8', name: 'Handebol', slug: 'handebol', icon: '🤾', color: '#8b5cf6', liveCount: 5, totalEvents: 82 },
   { id: '9', name: 'Atletismo', slug: 'atletismo', icon: '🏃', color: '#d97706', liveCount: 2, totalEvents: 75 },
   { id: '10', name: 'Ciclismo', slug: 'ciclismo', icon: '🚴', color: '#10b981', liveCount: 1, totalEvents: 60 },
 ]
@@ -29,7 +29,7 @@ export const mockChannels: Channel[] = [
   { id: '3', name: 'UFC BR', slug: 'ufc-br', description: 'Tudo sobre MMA e UFC', avatar: 'https://api.dicebear.com/7.x/shapes/svg?seed=UFCBR&backgroundColor=7c3aed', banner: '', owner: mockUsers[0], sport: sports[2], followersCount: 63000, isVerified: true, isLive: true, totalViews: 1800000 },
   { id: '4', name: 'Tennis World', slug: 'tennis-world', description: 'Tênis mundial ao vivo', avatar: 'https://api.dicebear.com/7.x/shapes/svg?seed=TennisWorld&backgroundColor=eab308', banner: '', owner: mockUsers[1], sport: sports[3], followersCount: 41000, isVerified: false, isLive: false, totalViews: 980000 },
   { id: '5', name: 'F1 Nation', slug: 'f1-nation', description: 'Fórmula 1 em alta velocidade', avatar: 'https://api.dicebear.com/7.x/shapes/svg?seed=F1Nation&backgroundColor=e11d48', banner: '', owner: mockUsers[0], sport: sports[4], followersCount: 198000, isVerified: true, isLive: false, totalViews: 8100000 },
-  { id: '6', name: 'E-Sports Arena', slug: 'esports-arena', description: 'O maior canal de e-sports do Brasil', avatar: 'https://api.dicebear.com/7.x/shapes/svg?seed=ESportsArena&backgroundColor=8b5cf6', banner: '', owner: mockUsers[1], sport: sports[7], followersCount: 312000, isVerified: true, isLive: true, totalViews: 12500000 },
+  { id: '6', name: 'Arena Handebol', slug: 'arena-handebol', description: 'Jogos, ligas e melhores momentos de handebol', avatar: 'https://api.dicebear.com/7.x/shapes/svg?seed=ArenaHandebol&backgroundColor=8b5cf6', banner: '', owner: mockUsers[1], sport: sports[7], followersCount: 112000, isVerified: true, isLive: true, totalViews: 3200000 },
 ]
 
 export const liveEvents: Event[] = [
@@ -77,23 +77,23 @@ export const liveEvents: Event[] = [
   },
   {
     id: '3',
-    title: 'CS2 Major - Grand Final',
-    description: 'Grande final do CS2 Major com as melhores equipes do mundo',
-    thumbnail: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80',
+    title: 'Final Nacional de Handebol',
+    description: 'Decisao nacional com duas equipas em grande fase',
+    thumbnail: 'https://images.unsplash.com/photo-1519861531473-9200262188bf?w=800&q=80',
     streamUrl: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8',
     sport: sports[7],
     channel: mockChannels[5],
     status: 'live',
     startTime: new Date().toISOString(),
-    viewers: 127500,
-    likes: 42100,
-    views: 890000,
-    tags: ['cs2', 'esports', 'major', 'gaming'],
+    viewers: 57500,
+    likes: 18100,
+    views: 190000,
+    tags: ['handebol', 'final', 'nacional'],
     isFeatured: true,
     isPremium: false,
     teams: {
-      home: { name: 'FURIA', logo: '🐆', score: 14 },
-      away: { name: 'Natus Vincere', logo: '⚡', score: 11 }
+      home: { name: 'Benfica', logo: 'BEN', score: 24 },
+      away: { name: 'Sporting', logo: 'SCP', score: 22 }
     }
   },
   {
@@ -257,18 +257,18 @@ export const highlights: Video[] = [
   },
   {
     id: '5',
-    title: 'FURIA - Clutches Impossíveis CS2',
-    description: 'Os melhores clutches da FURIA no CS2 Major',
-    thumbnail: 'https://images.unsplash.com/photo-1606318313647-17e72e977753?w=800&q=80',
+    title: 'Defesas Decisivas no Handebol',
+    description: 'As melhores defesas da semana nas ligas nacionais',
+    thumbnail: 'https://images.unsplash.com/photo-1519861531473-9200262188bf?w=800&q=80',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
     duration: 290,
-    views: 780000,
-    likes: 42100,
+    views: 580000,
+    likes: 22100,
     sport: sports[7],
     channel: mockChannels[5],
     type: 'clip',
     publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    tags: ['furia', 'cs2', 'clutch', 'esports']
+    tags: ['handebol', 'defesas', 'melhores']
   },
   {
     id: '6',

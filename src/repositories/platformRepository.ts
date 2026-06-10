@@ -21,7 +21,7 @@ export class PlatformRepository {
       this.api.get<Video[]>('/videos?limit=12&sort=views', fallback.highlights),
       this.api.get<Sport[]>('/sports', fallback.sports),
       this.api.get<Channel[]>('/channels', fallback.channels),
-      this.api.get<Game[]>('/games/trending', fallback.games),
+      this.api.get<Game[]>('/sports-catalog/trending', fallback.games),
       this.api.get<PlatformStats>('/platform/stats', fallback.stats),
     ])
 
@@ -29,6 +29,6 @@ export class PlatformRepository {
   }
 
   async getGames(fallback: Game[]): Promise<Game[]> {
-    return this.api.get<Game[]>('/games', fallback)
+    return this.api.get<Game[]>('/sports-catalog', fallback)
   }
 }

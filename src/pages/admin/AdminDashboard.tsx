@@ -1084,11 +1084,11 @@ export function AdminDashboard() {
               const optionLabel = String(option.name || option.slug || option.id || '');
               return '<option value="' + escapeAttr(optionValue) + '"' + (optionValue === selected || optionLabel === labelFallback ? ' selected' : '') + '>' + escapeHtml(optionLabel) + '</option>';
             }).join('');
-            return '<label class="admin-field-card"><span>' + label + '</span><select name="' + name + '" required><option value="">Selecionar</option>' + items + '</select></label>';
+            return '<label class="admin-field-card"><span>' + label + '</span><select class="admin-native-select" name="' + name + '" required><option value="">Selecionar</option>' + items + '</select></label>';
           }
 
           function renderStaticSelect(name, label, options, value) {
-            return '<label class="admin-field-card"><span>' + label + '</span><select name="' + name + '">' +
+            return '<label class="admin-field-card"><span>' + label + '</span><select class="admin-native-select" name="' + name + '">' +
               options.map((option) => '<option value="' + escapeAttr(option) + '"' + (option === value ? ' selected' : '') + '>' + escapeHtml(option) + '</option>').join('') +
               '</select></label>';
           }
@@ -1096,8 +1096,7 @@ export function AdminDashboard() {
           function renderServerRow(server, index) {
             const serverIndex = index + 1;
             return '<div class="admin-event-server-row">' +
-              '<span>Servidor ' + serverIndex + '</span>' +
-              '<input type="text" data-server-name value="' + escapeAttr(server.name || ('Servidor ' + serverIndex)) + '" aria-label="Nome do servidor" />' +
+              '<input type="text" data-server-name placeholder="Servidor ' + serverIndex + '" value="' + escapeAttr(server.name || ('Servidor ' + serverIndex)) + '" aria-label="Nome do servidor" />' +
               '<input type="url" data-server-url placeholder="https://..." value="' + escapeAttr(server.url || '') + '" ' + (serverIndex === 1 ? 'required' : '') + ' />' +
               '<button type="button" data-remove-server aria-label="Remover servidor"><i class="ph ph-trash"></i></button>' +
             '</div>';

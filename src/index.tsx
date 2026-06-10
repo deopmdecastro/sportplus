@@ -16,11 +16,11 @@ import { RegisterPage } from './pages/auth/RegisterPage'
 import { ProfilePage } from './pages/profile/ProfilePage'
 import { CreatorDashboard } from './pages/creator/CreatorDashboard'
 import { AdminDashboard } from './pages/admin/AdminDashboard'
-import { GamesCatalogPage } from './pages/GamesCatalogPage'
+import { SportsCatalogPage } from './pages/SportsCatalogPage'
 
 const app = new Hono()
 const siteUrl = 'https://sportplus.example'
-const publicRoutes = ['/', '/explorar', '/ao-vivo', '/highlights', '/login', '/cadastro', '/criador', '/admin', '/esportes', '/games']
+const publicRoutes = ['/', '/explorar', '/ao-vivo', '/highlights', '/login', '/cadastro', '/criador', '/admin', '/esportes', '/jogos']
 const apiProxyBaseUrl = 'http://localhost:4000'
 
 // ==============================
@@ -100,10 +100,12 @@ app.get('/highlights', (c) => {
   return c.html(<HighlightsPage />)
 })
 
-app.get('/games', async (c) => {
+app.get('/jogos', async (c) => {
   const games = await loadGamesData(getServerApiBaseUrl(c.env))
-  return c.html(<GamesCatalogPage games={games} />)
+  return c.html(<SportsCatalogPage games={games} />)
 })
+
+app.get('/games', (c) => c.redirect('/jogos', 302))
 
 // Live Events list
 app.get('/ao-vivo', (c) => {
@@ -233,7 +235,7 @@ app.get('/esportes', (c) => {
               { n:'Futebol', e:'⚽', c:'#22c55e' },{ n:'Basquete', e:'🏀', c:'#f97316' },
               { n:'UFC/MMA', e:'🥊', c:'#ef4444' },{ n:'Tênis', e:'🎾', c:'#eab308' },
               { n:'F1', e:'🏎️', c:'#e11d48' },{ n:'Vôlei', e:'🏐', c:'#3b82f6' },
-              { n:'Natação', e:'🏊', c:'#06b6d4' },{ n:'E-Sports', e:'🎮', c:'#8b5cf6' },
+              { n:'Natação', e:'🏊', c:'#06b6d4' },{ n:'Handebol', e:'🤾', c:'#8b5cf6' },
               { n:'Atletismo', e:'🏃', c:'#d97706' },{ n:'Ciclismo', e:'🚴', c:'#10b981' },
             ].map(s => (
               <a key={s.n} href={`/esportes/${s.n.toLowerCase()}`} style={`text-decoration:none;background:#111;border:2px solid rgba(255,255,255,0.06);border-radius:12px;padding:24px;text-align:center;display:block;transition:all 0.2s`} class="sport-card">

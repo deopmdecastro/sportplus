@@ -58,25 +58,38 @@ let engagementTablesReady = false
 let engagementTablesPromise = null
 let adminEventSchemaReady = false
 let adminEventSchemaPromise = null
-let gamingSchemaReady = false
-let gamingSchemaPromise = null
+let sportsCatalogReady = false
+let sportsCatalogPromise = null
 
 const seedGames = async () => {
+  await query("delete from games where id in ('game_valorant', 'game_fortnite', 'game_cs2', 'game_lol', 'game_minecraft')")
   await query(
     `insert into games (id, name, slug, category, cover, "heroImage", "accentColor", "liveStreams", viewers, followers, "isFeatured") values
-      ('game_valorant', 'Valorant', 'valorant', 'Tactical FPS', 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=900&q=80', 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1600&q=80', '#ff4655', 42, 184000, 2200000, true),
-      ('game_fortnite', 'Fortnite', 'fortnite', 'Battle Royale', 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=900&q=80', 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1600&q=80', '#7c3aed', 37, 142000, 3100000, true),
-      ('game_cs2', 'Counter-Strike 2', 'counter-strike-2', 'FPS', 'https://images.unsplash.com/photo-1606318313647-17e72e977753?w=900&q=80', 'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=1600&q=80', '#f59e0b', 58, 212000, 2800000, false),
-      ('game_lol', 'League of Legends', 'league-of-legends', 'MOBA', 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=900&q=80', 'https://images.unsplash.com/photo-1542751110-97427bbecf20?w=1600&q=80', '#38bdf8', 64, 268000, 4200000, true),
-      ('game_minecraft', 'Minecraft', 'minecraft', 'Sandbox', 'https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=900&q=80', 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1600&q=80', '#22c55e', 24, 91000, 1900000, false)
-     on conflict (id) do nothing`,
+      ('sport_football', 'Futebol', 'futebol', 'Jogos ao vivo', 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=900&q=80', 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1600&q=80', '#22c55e', 12, 248000, 3400000, true),
+      ('sport_champions', 'Liga dos Campeoes', 'liga-dos-campeoes', 'Futebol europeu', 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=900&q=80', 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1600&q=80', '#3b82f6', 6, 186000, 2600000, true),
+      ('sport_basketball', 'Basquete', 'basquete', 'Ligas e finais', 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=900&q=80', 'https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=1600&q=80', '#f97316', 8, 124000, 1800000, false),
+      ('sport_formula_1', 'Formula 1', 'formula-1', 'Grandes premios', 'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?w=900&q=80', 'https://images.unsplash.com/photo-1541447271487-09612b3f49f7?w=1600&q=80', '#ef4444', 4, 204000, 2100000, true),
+      ('sport_ufc', 'UFC/MMA', 'ufc-mma', 'Combates ao vivo', 'https://images.unsplash.com/photo-1555597673-b21d5c935865?w=900&q=80', 'https://images.unsplash.com/photo-1569517282132-25d22f4573e6?w=1600&q=80', '#dc2626', 2, 68000, 1200000, false),
+      ('sport_tennis', 'Tenis', 'tenis', 'Torneios internacionais', 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=900&q=80', 'https://images.unsplash.com/photo-1542144582-1ba00456b5e3?w=1600&q=80', '#eab308', 5, 42800, 840000, false),
+      ('sport_cycling', 'Ciclismo', 'ciclismo', 'Etapas e grandes voltas', 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=900&q=80', 'https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=1600&q=80', '#10b981', 1, 18500, 360000, false)
+     on conflict (id) do update set
+      name = excluded.name,
+      slug = excluded.slug,
+      category = excluded.category,
+      cover = excluded.cover,
+      "heroImage" = excluded."heroImage",
+      "accentColor" = excluded."accentColor",
+      "liveStreams" = excluded."liveStreams",
+      viewers = excluded.viewers,
+      followers = excluded.followers,
+      "isFeatured" = excluded."isFeatured"`,
   )
 }
 
-const ensureGamingSchema = async () => {
-  if (gamingSchemaReady) return
-  if (!gamingSchemaPromise) {
-    gamingSchemaPromise = (async () => {
+const ensureSportsCatalogSchema = async () => {
+  if (sportsCatalogReady) return
+  if (!sportsCatalogPromise) {
+    sportsCatalogPromise = (async () => {
       await query(`
         create table if not exists games (
           id text primary key default concat('game_', replace(gen_random_uuid()::text, '-', '')),
@@ -93,14 +106,14 @@ const ensureGamingSchema = async () => {
         )
       `)
       await seedGames()
-      gamingSchemaReady = true
+      sportsCatalogReady = true
     })().catch((error) => {
-      gamingSchemaPromise = null
+      sportsCatalogPromise = null
       throw error
     })
   }
 
-  await gamingSchemaPromise
+  await sportsCatalogPromise
 }
 
 const ensureAdminEventSchema = async () => {
@@ -478,7 +491,7 @@ api.get('/health', async (c) => {
 })
 
 api.get('/sports', async (c) => {
-  const sports = await query('select * from sports order by name')
+  const sports = await query("select * from sports where slug <> 'esports' order by name")
   return c.json({ success: true, data: sports })
 })
 
@@ -490,14 +503,37 @@ api.get('/sports/:slug', async (c) => {
   return c.json({ success: true, data: { ...sport, events: events.map(mapRecord) } })
 })
 
+api.get('/sports-catalog', async (c) => {
+  await ensureSportsCatalogSchema()
+  const games = await query('select * from games order by viewers desc, "liveStreams" desc, name')
+  return c.json({ success: true, data: games.map(mapRecord), total: games.length })
+})
+
+api.get('/sports-catalog/trending', async (c) => {
+  await ensureSportsCatalogSchema()
+  const limit = toNumber(c.req.query('limit'), 10)
+  const games = await query(
+    'select * from games order by "isFeatured" desc, viewers desc, "liveStreams" desc limit $1',
+    [limit],
+  )
+  return c.json({ success: true, data: games.map(mapRecord), total: games.length })
+})
+
+api.get('/sports-catalog/:slug', async (c) => {
+  await ensureSportsCatalogSchema()
+  const [game] = await query('select * from games where slug = $1 or id = $1', [c.req.param('slug')])
+  if (!game) return c.json({ success: false, error: 'Catalog item not found' }, 404)
+  return c.json({ success: true, data: mapRecord(game) })
+})
+
 api.get('/games', async (c) => {
-  await ensureGamingSchema()
+  await ensureSportsCatalogSchema()
   const games = await query('select * from games order by viewers desc, "liveStreams" desc, name')
   return c.json({ success: true, data: games.map(mapRecord), total: games.length })
 })
 
 api.get('/games/trending', async (c) => {
-  await ensureGamingSchema()
+  await ensureSportsCatalogSchema()
   const limit = toNumber(c.req.query('limit'), 10)
   const games = await query(
     'select * from games order by "isFeatured" desc, viewers desc, "liveStreams" desc limit $1',
@@ -507,9 +543,9 @@ api.get('/games/trending', async (c) => {
 })
 
 api.get('/games/:slug', async (c) => {
-  await ensureGamingSchema()
+  await ensureSportsCatalogSchema()
   const [game] = await query('select * from games where slug = $1 or id = $1', [c.req.param('slug')])
-  if (!game) return c.json({ success: false, error: 'Game not found' }, 404)
+  if (!game) return c.json({ success: false, error: 'Catalog item not found' }, 404)
   return c.json({ success: true, data: mapRecord(game) })
 })
 
@@ -526,7 +562,7 @@ api.get('/streams/live', async (c) => {
 })
 
 api.get('/platform/stats', async (c) => {
-  await ensureGamingSchema()
+  await ensureSportsCatalogSchema()
   await ensureEngagementTables()
   const [stats] = await query(`
     select
