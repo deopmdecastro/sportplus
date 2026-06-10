@@ -1113,8 +1113,15 @@ export function AdminDashboard() {
           function wireEventServerRows() {
             const rows = document.querySelectorAll('.admin-event-server-row');
             rows.forEach((row, index) => {
-              row.querySelector('span').textContent = 'Servidor ' + (index + 1);
+              const nameInput = row.querySelector('[data-server-name]');
+              if (nameInput && !nameInput.value.trim()) {
+                nameInput.value = 'Servidor ' + (index + 1);
+              }
+              if (nameInput) {
+                nameInput.placeholder = 'Servidor ' + (index + 1);
+              }
               const remove = row.querySelector('[data-remove-server]');
+              if (!remove) return;
               remove.disabled = rows.length <= 1;
               remove.onclick = () => {
                 if (document.querySelectorAll('.admin-event-server-row').length <= 1) return;
