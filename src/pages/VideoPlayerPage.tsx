@@ -1,18 +1,20 @@
 /** @jsxImportSource hono/jsx */
 import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'
-import { VideoCard } from '../components/cards/VideoCard'
 import { highlights } from '../data/mockData'
+import type { VideoPageData } from '../lib/apiClient'
 import { formatNumber, formatDuration, formatTimeAgo } from '../lib/utils'
 
 interface VideoPlayerPageProps {
   videoId: string
+  data?: VideoPageData
 }
 
-export function VideoPlayerPage({ videoId }: VideoPlayerPageProps) {
-  const video = highlights.find(v => v.id === videoId) || highlights[0]
-  const related = highlights.filter(v => v.id !== video.id && v.sport.id === video.sport.id).slice(0, 4)
-  const otherVideos = highlights.filter(v => v.id !== video.id && v.sport.id !== video.sport.id).slice(0, 4)
+export function VideoPlayerPage({ videoId, data }: VideoPlayerPageProps) {
+  const video = data?.video || highlights.find(v => v.id === videoId) || highlights[0]
+  const videos = data?.videos?.length ? data.videos : highlights
+  const related = videos.filter(v => v.id !== video.id && v.sport.id === video.sport.id).slice(0, 4)
+  const otherVideos = videos.filter(v => v.id !== video.id && v.sport.id !== video.sport.id).slice(0, 4)
 
   return (
     <html>
@@ -112,8 +114,8 @@ export function VideoPlayerPage({ videoId }: VideoPlayerPageProps) {
                     <span style="color:rgba(255,255,255,0.5);font-size:14px">{video.sport.icon} {video.sport.name}</span>
                   </div>
                   <div style="display:flex;gap:8px">
-                    <button style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">
-                      ❤️ {formatNumber(video.likes)}
+                    <button id="video-like-btn" data-base-likes={video.likes} style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">
+                      ❤️ <span id="video-like-count">{formatNumber(video.likes)}</span>
                     </button>
                     <button style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">
                       🔗 Compartilhar
@@ -133,7 +135,7 @@ export function VideoPlayerPage({ videoId }: VideoPlayerPageProps) {
                       <div style="color:rgba(255,255,255,0.4);font-size:12px">{formatNumber(video.channel.followersCount)} seguidores</div>
                     </div>
                   </div>
-                  <button style="background:linear-gradient(135deg,#ef4444,#dc2626);border:none;color:white;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">+ Seguir</button>
+                  <button id="video-follow-btn" data-base-followers={video.channel.followersCount} style="background:linear-gradient(135deg,#ef4444,#dc2626);border:none;color:white;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">+ Seguir</button>
                 </div>
 
                 {/* Description */}
@@ -242,6 +244,103 @@ export function VideoPlayerPage({ videoId }: VideoPlayerPageProps) {
             el.addEventListener('mouseenter', () => el.style.opacity = '0.8');
             el.addEventListener('mouseleave', () => el.style.opacity = '1');
           });
+
+          const apiBaseUrl = window.SPORTPLUS_API_BASE || 'http://localhost:4000/api';
+          const videoKey = 'sportplus:video:${video.id}';
+          const channelKey = 'sportplus:channel:${video.channel.id}';
+
+          function formatCompact(value) {
+            const number = Number(value || 0);
+            if (number >= 1000000) return (number / 1000000).toFixed(number >= 10000000 ? 0 : 1).replace('.0', '') + 'M';
+            if (number >= 1000) return (number / 1000).toFixed(number >= 10000 ? 0 : 1).replace('.0', '') + 'K';
+            return String(number);
+          }
+
+          function readJson(key, fallback) {
+            try {
+              const value = localStorage.getItem(key);
+              return value ? JSON.parse(value) : fallback;
+            } catch (_) {
+              return fallback;
+            }
+          }
+
+          function writeJson(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+          }
+
+          function getViewerKey() {
+            const key = 'sportplus_viewer_key';
+            let value = localStorage.getItem(key);
+            if (!value) {
+              value = 'viewer_' + Date.now() + '_' + Math.random().toString(36).slice(2, 12);
+              localStorage.setItem(key, value);
+            }
+            return value;
+          }
+
+          function renderVideoLike() {
+            const state = readJson(videoKey, { liked: false });
+            const button = document.getElementById('video-like-btn');
+            const count = document.getElementById('video-like-count');
+            if (count) count.textContent = formatCompact(Number(button?.dataset.baseLikes || 0));
+            if (button) {
+              button.style.background = state.liked ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.07)';
+              button.style.borderColor = state.liked ? 'rgba(239,68,68,0.45)' : 'rgba(255,255,255,0.1)';
+            }
+          }
+
+          function renderVideoFollow() {
+            const state = readJson(channelKey, { followed: false });
+            const button = document.getElementById('video-follow-btn');
+            if (button) {
+              button.textContent = state.followed ? 'Seguindo' : '+ Seguir';
+              button.style.background = state.followed ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg,#ef4444,#dc2626)';
+              button.style.border = state.followed ? '1px solid rgba(255,255,255,0.16)' : 'none';
+            }
+          }
+
+          document.getElementById('video-like-btn')?.addEventListener('click', async () => {
+            const state = readJson(videoKey, { liked: false });
+            state.liked = !state.liked;
+            writeJson(videoKey, state);
+            renderVideoLike();
+            try {
+              const response = await fetch(apiBaseUrl + '/videos/${video.id}/like', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ viewerKey: getViewerKey(), liked: state.liked }),
+              });
+              const payload = await response.json();
+              if (payload?.success) {
+                const button = document.getElementById('video-like-btn');
+                const count = document.getElementById('video-like-count');
+                if (button) button.dataset.baseLikes = payload.data.likes;
+                if (count) count.textContent = formatCompact(payload.data.likes);
+              }
+            } catch (_) {
+              window.showToast?.('Nao foi possivel sincronizar a curtida agora.', 'error');
+            }
+          });
+
+          document.getElementById('video-follow-btn')?.addEventListener('click', async () => {
+            const state = readJson(channelKey, { followed: false });
+            state.followed = !state.followed;
+            writeJson(channelKey, state);
+            renderVideoFollow();
+            try {
+              await fetch(apiBaseUrl + '/channels/${video.channel.id}/follow', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ viewerKey: getViewerKey(), following: state.followed }),
+              });
+            } catch (_) {
+              window.showToast?.('Nao foi possivel sincronizar o canal agora.', 'error');
+            }
+          });
+
+          renderVideoLike();
+          renderVideoFollow();
         `}} />
       </body>
     </html>

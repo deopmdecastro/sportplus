@@ -5,7 +5,6 @@ import { cors } from 'hono/cors'
 import { getDatabaseHealth, query } from './db.js'
 import { saveUploadedImage } from './imageUpload.js'
 import { createRateLimiter, fail, getJsonBody, requestContext } from './http.js'
-import { parseMultipartFormData } from 'hono/form-data'
 
 
 const app = new Hono()
@@ -55,37 +54,261 @@ const mapRecord = (row) => ({
   totalViews: Number(row.totalViews || 0),
 })
 
-let eventViewsReady = false
+let engagementTablesReady = false
+let engagementTablesPromise = null
+let adminEventSchemaReady = false
+let adminEventSchemaPromise = null
 
-const ensureEventViewsTable = async () => {
-  if (eventViewsReady) return
-  await query(`
-    create table if not exists event_views (
-      id bigserial primary key,
-      event_id text not null references events(id) on delete cascade,
-      viewer_key text not null,
-      created_at timestamptz not null default now()
-    )
-  `)
-  await query('create unique index if not exists event_views_event_id_viewer_key_idx on event_views (event_id, viewer_key)')
-  eventViewsReady = true
+const ensureAdminEventSchema = async () => {
+  if (adminEventSchemaReady) return
+  if (!adminEventSchemaPromise) {
+    adminEventSchemaPromise = (async () => {
+      await query('alter table events add column if not exists "streamServers" jsonb not null default \'[]\'::jsonb')
+      await query(`
+        create or replace view event_details as
+        select
+          e.id,
+          e.title,
+          e.description,
+          e.thumbnail,
+          row_to_json(s)::jsonb as sport,
+          row_to_json(cd)::jsonb as channel,
+          e.status,
+          e."startTime",
+          e."endTime",
+          e.viewers,
+          e.likes,
+          e.views,
+          e.tags,
+          e."streamUrl",
+          e."isFeatured",
+          e."isPremium",
+          e.teams,
+          e."streamServers"
+        from events e
+        join sports s on s.id = e.sport_id
+        join channel_details cd on cd.id = e.channel_id
+      `)
+      adminEventSchemaReady = true
+    })().catch((error) => {
+      adminEventSchemaPromise = null
+      throw error
+    })
+  }
+
+  await adminEventSchemaPromise
 }
 
-const eventViewsJoin = `
+const ensureEngagementTables = async () => {
+  await ensureAdminEventSchema()
+  if (engagementTablesReady) return
+  if (!engagementTablesPromise) {
+    engagementTablesPromise = (async () => {
+      await query(`
+        create table if not exists event_views (
+          id bigserial primary key,
+          event_id text not null references events(id) on delete cascade,
+          viewer_key text not null,
+          created_at timestamptz not null default now()
+        )
+      `)
+      await query('create unique index if not exists event_views_event_id_viewer_key_idx on event_views (event_id, viewer_key)')
+      await query(`
+        create table if not exists event_likes (
+          id bigserial primary key,
+          event_id text not null references events(id) on delete cascade,
+          viewer_key text not null,
+          created_at timestamptz not null default now()
+        )
+      `)
+      await query('create unique index if not exists event_likes_event_id_viewer_key_idx on event_likes (event_id, viewer_key)')
+      await query(`
+        create table if not exists video_likes (
+          id bigserial primary key,
+          video_id text not null references videos(id) on delete cascade,
+          viewer_key text not null,
+          created_at timestamptz not null default now()
+        )
+      `)
+      await query('create unique index if not exists video_likes_video_id_viewer_key_idx on video_likes (video_id, viewer_key)')
+      await query(`
+        create table if not exists channel_follows (
+          id bigserial primary key,
+          channel_id text not null references channels(id) on delete cascade,
+          viewer_key text not null,
+          created_at timestamptz not null default now()
+        )
+      `)
+      await query('create unique index if not exists channel_follows_channel_id_viewer_key_idx on channel_follows (channel_id, viewer_key)')
+      engagementTablesReady = true
+    })().catch((error) => {
+      engagementTablesPromise = null
+      throw error
+    })
+  }
+
+  await engagementTablesPromise
+}
+
+const eventEngagementJoins = `
   left join (
     select event_id, count(*)::int as "realViews"
     from event_views
     group by event_id
   ) ev on ev.event_id = event_details.id
+  left join (
+    select event_id, count(*)::int as "realLikes"
+    from event_likes
+    group by event_id
+  ) el on el.event_id = event_details.id
 `
 
 const mapEventRecord = (row) => {
   const record = mapRecord(row)
   const realViews = Number(row.realViews || 0)
+  const realLikes = Number(row.realLikes || 0)
   return {
     ...record,
-    views: realViews,
-    viewers: realViews,
+    likes: Number(record.likes || 0) + realLikes,
+    views: Number(record.views || 0) + realViews,
+    viewers: Number(record.viewers || 0) + realViews,
+  }
+}
+
+const mapChannelRecord = (row) => {
+  const record = mapRecord(row)
+  return {
+    ...record,
+    followersCount: Number(record.followersCount || 0) + Number(row.realFollowers || 0),
+  }
+}
+
+const mapVideoRecord = (row) => {
+  const record = mapRecord(row)
+  return {
+    ...record,
+    likes: Number(record.likes || 0) + Number(row.realLikes || 0),
+  }
+}
+
+const slugify = (value) => String(value || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .trim()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '')
+
+const compactServers = (body) => {
+  const rawServers = Array.isArray(body.streamServers)
+    ? body.streamServers
+    : Array.isArray(body.servers)
+      ? body.servers
+      : []
+
+  const servers = rawServers
+    .map((item, index) => {
+      if (typeof item === 'string') {
+        return { id: `server_${index + 1}`, name: `Servidor ${index + 1}`, url: item.trim() }
+      }
+
+      return {
+        id: String(item?.id || `server_${index + 1}`),
+        name: String(item?.name || item?.label || `Servidor ${index + 1}`).trim(),
+        url: String(item?.url || item?.streamUrl || '').trim(),
+      }
+    })
+    .filter((item) => item.url)
+
+  const streamUrl = String(body.streamUrl || body.streamURL || '').trim()
+  if (streamUrl && !servers.some((item) => item.url === streamUrl)) {
+    servers.unshift({ id: 'server_1', name: 'Servidor 1', url: streamUrl })
+  }
+
+  return servers.map((server, index) => ({
+    ...server,
+    id: server.id || `server_${index + 1}`,
+    name: server.name || `Servidor ${index + 1}`,
+  }))
+}
+
+const parseTags = (value) => {
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean)
+  return String(value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+const parseTeams = (value) => {
+  if (!value) return null
+  if (typeof value === 'object') return value
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
+}
+
+const findSport = async (value) => {
+  const key = String(value || '').trim()
+  if (!key) return null
+  const slug = slugify(key)
+  const [sport] = await query(
+    'select * from sports where id = $1 or slug = $2 or lower(name) = lower($1) limit 1',
+    [key, slug],
+  )
+  return sport || null
+}
+
+const findChannel = async (value) => {
+  const key = String(value || '').trim()
+  if (!key) return null
+  const slug = slugify(key)
+  const [channel] = await query(
+    'select * from channels where id = $1 or slug = $2 or lower(name) = lower($1) limit 1',
+    [key, slug],
+  )
+  return channel || null
+}
+
+const buildEventAdminPayload = async (body, current = {}) => {
+  const sport = await findSport(body.sportId || body.sport_id || body.sport || current.sport_id)
+  const channel = await findChannel(body.channelId || body.channel_id || body.channel || current.channel_id)
+
+  if (!String(body.title ?? current.title ?? '').trim()) {
+    return { error: 'Titulo obrigatorio', code: 'title_required' }
+  }
+  if (!sport) {
+    return { error: 'Esporte invalido ou nao encontrado', code: 'sport_not_found' }
+  }
+  if (!channel) {
+    return { error: 'Canal invalido ou nao encontrado', code: 'channel_not_found' }
+  }
+
+  const servers = compactServers(body)
+  const fallbackStreamUrl = String(body.streamUrl || current.streamUrl || '').trim()
+
+  return {
+    values: {
+      title: String(body.title ?? current.title ?? '').trim(),
+      description: String(body.description ?? current.description ?? '').trim(),
+      thumbnail: String(body.thumbnail ?? current.thumbnail ?? '').trim(),
+      sportId: sport.id,
+      channelId: channel.id,
+      status: String(body.status || current.status || 'upcoming'),
+      startTime: body.startTime || current.startTime || new Date().toISOString(),
+      endTime: body.endTime || current.endTime || null,
+      viewers: Number(body.viewers ?? current.viewers ?? 0) || 0,
+      likes: Number(body.likes ?? current.likes ?? 0) || 0,
+      views: Number(body.views ?? current.views ?? 0) || 0,
+      tags: parseTags(body.tags ?? current.tags),
+      streamUrl: servers[0]?.url || fallbackStreamUrl || null,
+      streamServers: servers,
+      isFeatured: body.isFeatured ?? body.featured ?? current.isFeatured ?? false,
+      isPremium: body.isPremium ?? body.premium === 'yes' ?? current.isPremium ?? false,
+      teams: parseTeams(body.teams ?? current.teams),
+    },
   }
 }
 
@@ -224,27 +447,74 @@ api.get('/sports/:slug', async (c) => {
 })
 
 api.get('/channels', async (c) => {
+  await ensureEngagementTables()
   const live = c.req.query('live')
   const params = []
-  let sql = 'select * from channel_details'
+  let sql = `select channel_details.*, coalesce(cf."realFollowers", 0)::int as "realFollowers"
+    from channel_details
+    left join (
+      select channel_id, count(*)::int as "realFollowers"
+      from channel_follows
+      group by channel_id
+    ) cf on cf.channel_id = channel_details.id`
 
   if (live === 'true') {
     sql += ' where "isLive" = true'
   }
 
-  sql += ' order by "followersCount" desc'
+  sql += ' order by ("followersCount" + coalesce(cf."realFollowers", 0)) desc'
   const channels = await query(sql, params)
-  return c.json({ success: true, data: channels.map(mapRecord) })
+  return c.json({ success: true, data: channels.map(mapChannelRecord) })
 })
 
 api.get('/channels/:slug', async (c) => {
-  const [channel] = await query('select * from channel_details where slug = $1', [c.req.param('slug')])
+  await ensureEngagementTables()
+  const [channel] = await query(
+    `select channel_details.*, coalesce(cf."realFollowers", 0)::int as "realFollowers"
+     from channel_details
+     left join (
+       select channel_id, count(*)::int as "realFollowers"
+       from channel_follows
+       group by channel_id
+     ) cf on cf.channel_id = channel_details.id
+     where slug = $1`,
+    [c.req.param('slug')],
+  )
   if (!channel) return c.json({ success: false, error: 'Channel not found' }, 404)
-  return c.json({ success: true, data: mapRecord(channel) })
+  return c.json({ success: true, data: mapChannelRecord(channel) })
+})
+
+api.post('/channels/:id/follow', async (c) => {
+  await ensureEngagementTables()
+  const body = await getJsonBody(c)
+  const viewerKey = String(body.viewerKey || '').trim()
+  const following = body.following !== false
+  if (!viewerKey) return fail(c, { status: 400, message: 'viewerKey obrigatorio', errors: ['viewer_key_required'] })
+
+  const [channel] = await query('select id from channels where id = $1 or slug = $1', [c.req.param('id')])
+  if (!channel) return fail(c, { status: 404, message: 'Channel not found', errors: ['channel_not_found'] })
+
+  if (following) {
+    await query(
+      'insert into channel_follows (channel_id, viewer_key) values ($1, $2) on conflict (channel_id, viewer_key) do nothing',
+      [channel.id, viewerKey.slice(0, 128)],
+    )
+  } else {
+    await query('delete from channel_follows where channel_id = $1 and viewer_key = $2', [channel.id, viewerKey.slice(0, 128)])
+  }
+
+  const [stats] = await query(
+    `select (c."followersCount" + coalesce(f.followers, 0))::int as followers
+     from channels c
+     left join (select channel_id, count(*)::int as followers from channel_follows group by channel_id) f on f.channel_id = c.id
+     where c.id = $1`,
+    [channel.id],
+  )
+  return c.json({ success: true, data: { channelId: channel.id, following, followersCount: Number(stats.followers || 0) } })
 })
 
 api.get('/events', async (c) => {
-  await ensureEventViewsTable()
+  await ensureEngagementTables()
   const status = c.req.query('status')
   const sportSlug = c.req.query('sport')
   const limit = toNumber(c.req.query('limit'), 20)
@@ -267,8 +537,8 @@ api.get('/events', async (c) => {
   const [{ total }] = await query(`select count(*)::int as total from event_details ${where}`, params)
   params.push(limit, offset)
   const events = await query(
-    `select event_details.*, coalesce(ev."realViews", 0)::int as "realViews"
-     from event_details ${eventViewsJoin}
+    `select event_details.*, coalesce(ev."realViews", 0)::int as "realViews", coalesce(el."realLikes", 0)::int as "realLikes"
+     from event_details ${eventEngagementJoins}
      ${where} order by "startTime" limit $${params.length - 1} offset $${params.length}`,
     params,
   )
@@ -281,22 +551,22 @@ api.get('/events', async (c) => {
 })
 
 api.get('/events/live', async (c) => {
-  await ensureEventViewsTable()
+  await ensureEngagementTables()
   const events = await query(
-    `select event_details.*, coalesce(ev."realViews", 0)::int as "realViews"
-     from event_details ${eventViewsJoin}
+    `select event_details.*, coalesce(ev."realViews", 0)::int as "realViews", coalesce(el."realLikes", 0)::int as "realLikes"
+     from event_details ${eventEngagementJoins}
      where status = $1
-     order by coalesce(ev."realViews", 0) desc, "startTime" desc`,
+     order by (views + coalesce(ev."realViews", 0)) desc, "startTime" desc`,
     ['live'],
   )
   return c.json({ success: true, data: events.map(mapEventRecord), count: events.length })
 })
 
 api.get('/events/upcoming', async (c) => {
-  await ensureEventViewsTable()
+  await ensureEngagementTables()
   const events = await query(
-    `select event_details.*, coalesce(ev."realViews", 0)::int as "realViews"
-     from event_details ${eventViewsJoin}
+    `select event_details.*, coalesce(ev."realViews", 0)::int as "realViews", coalesce(el."realLikes", 0)::int as "realLikes"
+     from event_details ${eventEngagementJoins}
      where status = $1
      order by "startTime"`,
     ['upcoming'],
@@ -305,10 +575,10 @@ api.get('/events/upcoming', async (c) => {
 })
 
 api.get('/events/:id', async (c) => {
-  await ensureEventViewsTable()
+  await ensureEngagementTables()
   const [event] = await query(
-    `select event_details.*, coalesce(ev."realViews", 0)::int as "realViews"
-     from event_details ${eventViewsJoin}
+    `select event_details.*, coalesce(ev."realViews", 0)::int as "realViews", coalesce(el."realLikes", 0)::int as "realLikes"
+     from event_details ${eventEngagementJoins}
      where event_details.id = $1`,
     [c.req.param('id')],
   )
@@ -317,7 +587,7 @@ api.get('/events/:id', async (c) => {
 })
 
 api.post('/events/:id/view', async (c) => {
-  await ensureEventViewsTable()
+  await ensureEngagementTables()
   const body = await getJsonBody(c)
   const viewerKey = String(body.viewerKey || '').trim()
   if (!viewerKey) return fail(c, { status: 400, message: 'viewerKey obrigatorio', errors: ['viewer_key_required'] })
@@ -329,8 +599,43 @@ api.post('/events/:id/view', async (c) => {
     'insert into event_views (event_id, viewer_key) values ($1, $2) on conflict (event_id, viewer_key) do nothing',
     [event.id, viewerKey.slice(0, 128)],
   )
-  const [stats] = await query('select count(*)::int as views from event_views where event_id = $1', [event.id])
+  const [stats] = await query(
+    `select (e.views + coalesce(v.views, 0))::int as views
+     from events e
+     left join (select event_id, count(*)::int as views from event_views group by event_id) v on v.event_id = e.id
+     where e.id = $1`,
+    [event.id],
+  )
   return c.json({ success: true, data: { eventId: event.id, views: Number(stats.views || 0) } })
+})
+
+api.post('/events/:id/like', async (c) => {
+  await ensureEngagementTables()
+  const body = await getJsonBody(c)
+  const viewerKey = String(body.viewerKey || '').trim()
+  const liked = body.liked !== false
+  if (!viewerKey) return fail(c, { status: 400, message: 'viewerKey obrigatorio', errors: ['viewer_key_required'] })
+
+  const [event] = await query('select id from events where id = $1', [c.req.param('id')])
+  if (!event) return fail(c, { status: 404, message: 'Event not found', errors: ['event_not_found'] })
+
+  if (liked) {
+    await query(
+      'insert into event_likes (event_id, viewer_key) values ($1, $2) on conflict (event_id, viewer_key) do nothing',
+      [event.id, viewerKey.slice(0, 128)],
+    )
+  } else {
+    await query('delete from event_likes where event_id = $1 and viewer_key = $2', [event.id, viewerKey.slice(0, 128)])
+  }
+
+  const [stats] = await query(
+    `select (e.likes + coalesce(l.likes, 0))::int as likes
+     from events e
+     left join (select event_id, count(*)::int as likes from event_likes group by event_id) l on l.event_id = e.id
+     where e.id = $1`,
+    [event.id],
+  )
+  return c.json({ success: true, data: { eventId: event.id, liked, likes: Number(stats.likes || 0) } })
 })
 
 api.get('/events/:id/live-score', async (c) => {
@@ -346,6 +651,7 @@ api.get('/events/:id/live-score', async (c) => {
 })
 
 api.get('/videos', async (c) => {
+  await ensureEngagementTables()
   const type = c.req.query('type')
   const sport = c.req.query('sport')
   const limit = toNumber(c.req.query('limit'), 20)
@@ -363,17 +669,67 @@ api.get('/videos', async (c) => {
     filters.push(`sport->>'slug' = $${params.length}`)
   }
 
-  const orderBy = sort === 'likes' ? '"likes" desc' : sort === 'recent' ? '"publishedAt" desc' : '"views" desc'
+  const orderBy = sort === 'likes' ? '("likes" + coalesce(vl."realLikes", 0)) desc' : sort === 'recent' ? '"publishedAt" desc' : '"views" desc'
   const where = filters.length ? `where ${filters.join(' and ')}` : ''
   params.push(limit)
-  const videos = await query(`select * from video_details ${where} order by ${orderBy} limit $${params.length}`, params)
-  return c.json({ success: true, data: videos.map(mapRecord), total: videos.length })
+  const videos = await query(
+    `select video_details.*, coalesce(vl."realLikes", 0)::int as "realLikes"
+     from video_details
+     left join (
+       select video_id, count(*)::int as "realLikes"
+       from video_likes
+       group by video_id
+     ) vl on vl.video_id = video_details.id
+     ${where} order by ${orderBy} limit $${params.length}`,
+    params,
+  )
+  return c.json({ success: true, data: videos.map(mapVideoRecord), total: videos.length })
 })
 
 api.get('/videos/:id', async (c) => {
-  const [video] = await query('select * from video_details where id = $1', [c.req.param('id')])
+  await ensureEngagementTables()
+  const [video] = await query(
+    `select video_details.*, coalesce(vl."realLikes", 0)::int as "realLikes"
+     from video_details
+     left join (
+       select video_id, count(*)::int as "realLikes"
+       from video_likes
+       group by video_id
+     ) vl on vl.video_id = video_details.id
+     where video_details.id = $1`,
+    [c.req.param('id')],
+  )
   if (!video) return c.json({ success: false, error: 'Video not found' }, 404)
-  return c.json({ success: true, data: mapRecord(video) })
+  return c.json({ success: true, data: mapVideoRecord(video) })
+})
+
+api.post('/videos/:id/like', async (c) => {
+  await ensureEngagementTables()
+  const body = await getJsonBody(c)
+  const viewerKey = String(body.viewerKey || '').trim()
+  const liked = body.liked !== false
+  if (!viewerKey) return fail(c, { status: 400, message: 'viewerKey obrigatorio', errors: ['viewer_key_required'] })
+
+  const [video] = await query('select id from videos where id = $1', [c.req.param('id')])
+  if (!video) return fail(c, { status: 404, message: 'Video not found', errors: ['video_not_found'] })
+
+  if (liked) {
+    await query(
+      'insert into video_likes (video_id, viewer_key) values ($1, $2) on conflict (video_id, viewer_key) do nothing',
+      [video.id, viewerKey.slice(0, 128)],
+    )
+  } else {
+    await query('delete from video_likes where video_id = $1 and viewer_key = $2', [video.id, viewerKey.slice(0, 128)])
+  }
+
+  const [stats] = await query(
+    `select (v.likes + coalesce(l.likes, 0))::int as likes
+     from videos v
+     left join (select video_id, count(*)::int as likes from video_likes group by video_id) l on l.video_id = v.id
+     where v.id = $1`,
+    [video.id],
+  )
+  return c.json({ success: true, data: { videoId: video.id, liked, likes: Number(stats.likes || 0) } })
 })
 
 api.get('/ads/serve', async (c) => {
@@ -482,6 +838,125 @@ api.get('/admin/stats', async (c) => {
   return c.json({ success: true, data: { ...stats, activeUsers: stats.totalUsers, campaigns, systemHealth: { status: 'healthy', uptime: 99.97, latency: 42 } } })
 })
 
+api.get('/admin/events', async (c) => {
+  await ensureEngagementTables()
+  const events = await query(
+    `select event_details.*, coalesce(ev."realViews", 0)::int as "realViews", coalesce(el."realLikes", 0)::int as "realLikes"
+     from event_details ${eventEngagementJoins}
+     order by "startTime" desc`,
+  )
+  return c.json({ success: true, data: events.map(mapEventRecord), total: events.length })
+})
+
+api.post('/admin/events', async (c) => {
+  await ensureAdminEventSchema()
+  const body = await getJsonBody(c)
+  const payload = await buildEventAdminPayload(body)
+  if (payload.error) {
+    return fail(c, { status: 400, message: payload.error, errors: [payload.code] })
+  }
+
+  const event = payload.values
+  const [created] = await query(
+    `insert into events (
+      id, title, description, thumbnail, sport_id, channel_id, status, "startTime", "endTime",
+      viewers, likes, views, tags, "streamUrl", "streamServers", "isFeatured", "isPremium", teams
+    )
+    values (
+      concat('event_', replace(gen_random_uuid()::text, '-', '')), $1, $2, $3, $4, $5, $6, $7, $8,
+      $9, $10, $11, $12::jsonb, $13, $14::jsonb, $15, $16, $17::jsonb
+    )
+    returning id`,
+    [
+      event.title,
+      event.description,
+      event.thumbnail,
+      event.sportId,
+      event.channelId,
+      event.status,
+      event.startTime,
+      event.endTime,
+      event.viewers,
+      event.likes,
+      event.views,
+      JSON.stringify(event.tags),
+      event.streamUrl,
+      JSON.stringify(event.streamServers),
+      Boolean(event.isFeatured),
+      Boolean(event.isPremium),
+      event.teams ? JSON.stringify(event.teams) : null,
+    ],
+  )
+
+  const [record] = await query('select * from event_details where id = $1', [created.id])
+  return c.json({ success: true, message: 'Evento criado com sucesso', data: mapEventRecord(record) }, 201)
+})
+
+api.put('/admin/events/:id', async (c) => {
+  await ensureAdminEventSchema()
+  const [current] = await query('select * from events where id = $1', [c.req.param('id')])
+  if (!current) return fail(c, { status: 404, message: 'Evento nao encontrado', errors: ['event_not_found'] })
+
+  const body = await getJsonBody(c)
+  const payload = await buildEventAdminPayload(body, current)
+  if (payload.error) {
+    return fail(c, { status: 400, message: payload.error, errors: [payload.code] })
+  }
+
+  const event = payload.values
+  await query(
+    `update events set
+      title = $1,
+      description = $2,
+      thumbnail = $3,
+      sport_id = $4,
+      channel_id = $5,
+      status = $6,
+      "startTime" = $7,
+      "endTime" = $8,
+      viewers = $9,
+      likes = $10,
+      views = $11,
+      tags = $12::jsonb,
+      "streamUrl" = $13,
+      "streamServers" = $14::jsonb,
+      "isFeatured" = $15,
+      "isPremium" = $16,
+      teams = $17::jsonb
+    where id = $18`,
+    [
+      event.title,
+      event.description,
+      event.thumbnail,
+      event.sportId,
+      event.channelId,
+      event.status,
+      event.startTime,
+      event.endTime,
+      event.viewers,
+      event.likes,
+      event.views,
+      JSON.stringify(event.tags),
+      event.streamUrl,
+      JSON.stringify(event.streamServers),
+      Boolean(event.isFeatured),
+      Boolean(event.isPremium),
+      event.teams ? JSON.stringify(event.teams) : null,
+      current.id,
+    ],
+  )
+
+  const [record] = await query('select * from event_details where id = $1', [current.id])
+  return c.json({ success: true, message: 'Evento atualizado com sucesso', data: mapEventRecord(record) })
+})
+
+api.delete('/admin/events/:id', async (c) => {
+  await ensureAdminEventSchema()
+  const [deleted] = await query('delete from events where id = $1 returning id, title', [c.req.param('id')])
+  if (!deleted) return fail(c, { status: 404, message: 'Evento nao encontrado', errors: ['event_not_found'] })
+  return c.json({ success: true, message: 'Evento apagado com sucesso', data: deleted })
+})
+
 api.get('/admin/campaigns', async (c) => {
   const campaigns = await query('select * from campaigns order by "startDate" desc')
   return c.json({ success: true, data: campaigns })
@@ -546,9 +1021,9 @@ api.post('/auth/logout', (c) => c.json({ success: true, message: 'Logout realiza
 
 api.post('/admin/upload-image', async (c) => {
   try {
-    const form = await parseMultipartFormData(c.req.raw)
-    const field = String(form.field || '').trim() || 'image'
-    const image = form.image
+    const form = await c.req.raw.formData()
+    const field = String(form.get('field') || '').trim() || 'image'
+    const image = form.get('image')
     const filename = image?.name
     const mimeType = image?.type
 

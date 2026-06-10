@@ -79,9 +79,13 @@ export function EventCard({ event, size = 'md' }: EventCardProps) {
           </h3>
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div style="display:flex;align-items:center;gap:6px">
-              <div style="width:20px;height:20px;border-radius:50%;background:#ef4444;display:flex;align-items:center;justify-content:center;font-size:10px">
-                {event.channel.name.charAt(0)}
-              </div>
+              {event.channel.avatar ? (
+                <img src={event.channel.avatar} alt="" loading="lazy" style="width:20px;height:20px;border-radius:50%;object-fit:cover;background:#ef4444" />
+              ) : (
+                <div style="width:20px;height:20px;border-radius:50%;background:#ef4444;display:flex;align-items:center;justify-content:center;font-size:10px">
+                  {event.channel.name.charAt(0)}
+                </div>
+              )}
               <span style="color:rgba(255,255,255,0.5);font-size:12px">{event.channel.name}</span>
             </div>
             <span data-event-views-label={event.id} style="color:rgba(255,255,255,0.4);font-size:12px">

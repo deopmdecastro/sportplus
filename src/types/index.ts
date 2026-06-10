@@ -55,6 +55,7 @@ export interface Event {
   views: number
   tags: string[]
   streamUrl?: string
+  streamServers?: { id?: string; name: string; url: string }[]
   isFeatured: boolean
   isPremium: boolean
   teams?: { home: TeamInfo; away: TeamInfo }

@@ -53,6 +53,7 @@ create table if not exists events (
   views integer not null default 0,
   tags jsonb not null default '[]',
   "streamUrl" text,
+  "streamServers" jsonb not null default '[]',
   "isFeatured" boolean not null default false,
   "isPremium" boolean not null default false,
   teams jsonb
@@ -93,6 +94,38 @@ create table if not exists ad_events (
   impression_id text,
   payload jsonb not null default '{}',
   created_at timestamptz not null default now()
+);
+
+create table if not exists event_views (
+  id bigserial primary key,
+  event_id text not null references events(id) on delete cascade,
+  viewer_key text not null,
+  created_at timestamptz not null default now(),
+  unique (event_id, viewer_key)
+);
+
+create table if not exists event_likes (
+  id bigserial primary key,
+  event_id text not null references events(id) on delete cascade,
+  viewer_key text not null,
+  created_at timestamptz not null default now(),
+  unique (event_id, viewer_key)
+);
+
+create table if not exists video_likes (
+  id bigserial primary key,
+  video_id text not null references videos(id) on delete cascade,
+  viewer_key text not null,
+  created_at timestamptz not null default now(),
+  unique (video_id, viewer_key)
+);
+
+create table if not exists channel_follows (
+  id bigserial primary key,
+  channel_id text not null references channels(id) on delete cascade,
+  viewer_key text not null,
+  created_at timestamptz not null default now(),
+  unique (channel_id, viewer_key)
 );
 
 create table if not exists campaigns (
@@ -148,7 +181,8 @@ select
   e."streamUrl",
   e."isFeatured",
   e."isPremium",
-  e.teams
+  e.teams,
+  e."streamServers"
 from events e
 join sports s on s.id = e.sport_id
 join channel_details cd on cd.id = e.channel_id;

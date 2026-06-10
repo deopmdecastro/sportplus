@@ -3,14 +3,21 @@ import { Navbar } from '../components/layout/Navbar'
 import { Footer } from '../components/layout/Footer'
 import { EventCard } from '../components/cards/EventCard'
 import { VideoCard } from '../components/cards/VideoCard'
-import { liveEvents, upcomingEvents, highlights, sports, mockChannels } from '../data/mockData'
+import { getMockHomePageData, type HomePageData } from '../lib/apiClient'
 import { formatNumber } from '../lib/utils'
 
-export function HomePage() {
-  const featuredEvent = liveEvents[4] || liveEvents[0]
+interface HomePageProps {
+  data?: HomePageData
+}
+
+export function HomePage({ data = getMockHomePageData() }: HomePageProps) {
+  const { liveEvents, upcomingEvents, highlights, sports, channels } = data
+  const fallback = getMockHomePageData()
+  const allEvents = [...liveEvents, ...upcomingEvents]
+  const featuredEvent = liveEvents.find((event) => event.isFeatured) || liveEvents[0] || upcomingEvents[0] || fallback.liveEvents[0]
   const heroTags = ['Ao vivo', featuredEvent.sport.name, '4K', 'Multi-camara']
-  const continueWatching = [...liveEvents.slice(0, 2), ...upcomingEvents.slice(0, 2)]
-  const recommended = [...liveEvents.slice(2), ...upcomingEvents].slice(0, 8)
+  const continueWatching = allEvents.length ? allEvents.slice(0, 4) : [...fallback.liveEvents.slice(0, 2), ...fallback.upcomingEvents.slice(0, 2)]
+  const recommended = (allEvents.length ? allEvents : [...fallback.liveEvents, ...fallback.upcomingEvents]).filter((event) => event.id !== featuredEvent.id).slice(0, 8)
   const popularThisWeek = [...highlights].sort((a, b) => b.views - a.views).slice(0, 8)
 
   return (
@@ -52,7 +59,7 @@ export function HomePage() {
         <Navbar currentPage="home" />
 
         <main>
-          <section class="stream-hero" aria-labelledby="hero-title">
+          <section class="stream-hero" aria-labelledby="hero-title" style={`--hero-image:url("${featuredEvent.thumbnail}")`}>
             <img class="stream-hero-bg" src={featuredEvent.thumbnail} alt="" loading="eager" />
             <div class="stream-hero-vignette"></div>
             <div class="stream-hero-content">
@@ -121,7 +128,11 @@ export function HomePage() {
             <div class="stream-rail stream-rail-compact">
               {continueWatching.map((event, index) => (
                 <a href={`/evento/${event.id}`} class="stream-progress-card" key={event.id}>
-                  <img src={event.thumbnail} alt={event.title} loading="lazy" />
+                  <span
+                    class="stream-progress-thumb"
+                    style={`background-image:url("${event.thumbnail}")`}
+                    aria-hidden="true"
+                  ></span>
                   <div>
                     <strong>{event.title}</strong>
                     <span>{event.channel.name}</span>
@@ -204,11 +215,11 @@ export function HomePage() {
               <a href="/explorar">Descobrir</a>
             </div>
             <div class="stream-channel-row">
-              {mockChannels.map((channel) => (
+              {channels.map((channel) => (
                 <a href={`/canal/${channel.slug}`} class="stream-channel-card" key={channel.id}>
                   <img src={channel.avatar} alt={channel.name} loading="lazy" />
                   <strong>{channel.name}</strong>
-                  <span>{formatNumber(channel.followersCount)} seguidores</span>
+                  <span><span data-channel-followers={channel.id}>{formatNumber(channel.followersCount)}</span> seguidores</span>
                   {channel.isLive && <b>Ao vivo</b>}
                 </a>
               ))}
@@ -234,7 +245,15 @@ export function HomePage() {
                 el.textContent = formatCompact(event.views || 0);
               });
               document.querySelectorAll('[data-event-views-label="' + event.id + '"]').forEach((el) => {
-                el.textContent = 'Views ' + formatCompact(event.views || 0);
+                el.textContent = '👁 ' + formatCompact(event.views || 0);
+              });
+            });
+          }
+
+          function updateChannels(channels) {
+            channels.forEach((channel) => {
+              document.querySelectorAll('[data-channel-followers="' + channel.id + '"]').forEach((el) => {
+                el.textContent = formatCompact(channel.followersCount || 0);
               });
             });
           }
@@ -247,6 +266,14 @@ export function HomePage() {
             } catch (_) {}
           }
 
+          async function refreshChannels() {
+            try {
+              const response = await fetch(apiBaseUrl + '/channels');
+              const payload = await response.json();
+              if (payload?.success) updateChannels(payload.data || []);
+            } catch (_) {}
+          }
+
           document.querySelectorAll('.stream-rail').forEach((rail) => {
             rail.addEventListener('wheel', (event) => {
               if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
@@ -256,7 +283,9 @@ export function HomePage() {
           });
 
           refreshLiveViews();
+          refreshChannels();
           setInterval(refreshLiveViews, 30000);
+          setInterval(refreshChannels, 60000);
         `}} />
       </body>
     </html>

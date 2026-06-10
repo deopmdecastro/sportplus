@@ -1,14 +1,16 @@
 /** @jsxImportSource hono/jsx */
 import { Navbar } from '../components/layout/Navbar'
 import { liveEvents } from '../data/mockData'
+import type { Event } from '../types'
 import { formatNumber } from '../lib/utils'
 
 interface LiveEventPageProps {
   eventId: string
+  event?: Event
 }
 
-export function LiveEventPage({ eventId }: LiveEventPageProps) {
-  const event = liveEvents.find(e => e.id === eventId) || liveEvents[0]
+export function LiveEventPage({ eventId, event: apiEvent }: LiveEventPageProps) {
+  const event = apiEvent || liveEvents.find(e => e.id === eventId) || liveEvents[0]
 
   return (
     <html>
@@ -298,6 +300,7 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
         <script dangerouslySetInnerHTML={{__html: `
           const mainPlayer = document.getElementById('sport-player');
           const mainStreamUrl = mainPlayer?.dataset.streamUrl || '';
+          const eventStreamServers = ${JSON.stringify((event.streamServers || []).filter((server) => server?.url)).replace(/</g, '\\u003c')};
           const streamStatus = document.getElementById('stream-status');
           const streamTestSelect = document.getElementById('stream-test-select');
           const streamServerList = document.getElementById('stream-server-list');
@@ -313,6 +316,9 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
             ['Live Akamai', 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8'],
             ['Live Akamai 2', 'https://moctobpltc-i.akamaihd.net/hls/live/571329/eight/playlist.m3u8'],
           ];
+          const availableStreams = eventStreamServers.length
+            ? eventStreamServers.map((server, index) => [server.name || ('Servidor ' + (index + 1)), server.url, index === 0 ? 'Fonte oficial' : 'Servidor alternativo'])
+            : hlsTestStreams.map(([label, url], index) => [label, url, index === 0 ? 'Fonte oficial' : 'Servidor alternativo']);
           let activeStreamUrl = mainStreamUrl;
           let streamLoaded = false;
           let streamReady = false;
@@ -489,7 +495,7 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
           }
 
           if (streamTestSelect) {
-            hlsTestStreams.forEach(([label, url]) => {
+            availableStreams.forEach(([label, url]) => {
               const option = document.createElement('option');
               option.value = url;
               option.textContent = label;
@@ -502,7 +508,7 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
           }
 
           if (streamServerList) {
-            hlsTestStreams.forEach(([label, url], index) => {
+            availableStreams.forEach(([label, url, caption], index) => {
               if (!url) return;
               const button = document.createElement('button');
               button.type = 'button';
@@ -510,7 +516,7 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
               button.dataset.url = url;
               button.setAttribute('role', 'option');
               button.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
-              button.innerHTML = '<strong>' + label + '</strong><span>' + (index === 0 ? 'Fonte oficial' : 'Servidor alternativo') + '</span>';
+              button.innerHTML = '<strong>' + label + '</strong><span>' + caption + '</span>';
               button.addEventListener('click', () => switchSportStream(url, label));
               streamServerList.appendChild(button);
             });
@@ -632,7 +638,7 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
               const payload = await response.json();
               if (payload?.success) {
                 document.querySelectorAll('[data-current-event-views]').forEach((el) => {
-                  el.textContent = payload.data.views;
+                  el.textContent = formatCompact(payload.data.views);
                 });
               }
             } catch (_) {}
@@ -772,7 +778,7 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
             const button = document.getElementById('like-btn');
             const count = document.getElementById('like-count');
             const baseLikes = Number(button?.dataset.baseLikes || 0);
-            if (count) count.textContent = formatCompact(baseLikes + (state.liked ? 1 : 0));
+            if (count) count.textContent = formatCompact(baseLikes);
             if (button) {
               button.style.background = state.liked ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.08)';
               button.style.borderColor = state.liked ? 'rgba(239,68,68,0.45)' : 'rgba(255,255,255,0.12)';
@@ -785,7 +791,7 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
             const button = document.getElementById('follow-btn');
             const count = document.getElementById('followers-count');
             const baseFollowers = Number(button?.dataset.baseFollowers || 0);
-            if (count) count.textContent = formatCompact(baseFollowers + (state.followed ? 1 : 0));
+            if (count) count.textContent = formatCompact(baseFollowers);
             if (button) {
               button.textContent = state.followed ? 'Seguindo' : '+ Seguir';
               button.style.background = state.followed ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg,#ef4444,#dc2626)';
@@ -826,20 +832,52 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
             });
           }
 
-          document.getElementById('like-btn')?.addEventListener('click', () => {
+          document.getElementById('like-btn')?.addEventListener('click', async () => {
             const state = getEventState();
             state.liked = !state.liked;
             saveEventState(state);
             renderLike();
-            window.showToast?.(state.liked ? 'Curtida adicionada.' : 'Curtida removida.', 'success');
+            try {
+              const response = await fetch(apiBaseUrl + '/events/${event.id}/like', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ viewerKey: getViewerKey(), liked: state.liked }),
+              });
+              const payload = await response.json();
+              if (payload?.success) {
+                const button = document.getElementById('like-btn');
+                const count = document.getElementById('like-count');
+                if (button) button.dataset.baseLikes = payload.data.likes;
+                if (count) count.textContent = formatCompact(payload.data.likes);
+              }
+              window.showToast?.(state.liked ? 'Curtida adicionada.' : 'Curtida removida.', 'success');
+            } catch (_) {
+              window.showToast?.('Nao foi possivel sincronizar a curtida agora.', 'error');
+            }
           });
 
-          document.getElementById('follow-btn')?.addEventListener('click', () => {
+          document.getElementById('follow-btn')?.addEventListener('click', async () => {
             const state = getChannelState();
             state.followed = !state.followed;
             saveChannelState(state);
             renderFollow();
-            window.showToast?.(state.followed ? 'Canal seguido.' : 'Voce deixou de seguir o canal.', 'success');
+            try {
+              const response = await fetch(apiBaseUrl + '/channels/${event.channel.id}/follow', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ viewerKey: getViewerKey(), following: state.followed }),
+              });
+              const payload = await response.json();
+              if (payload?.success) {
+                const button = document.getElementById('follow-btn');
+                const count = document.getElementById('followers-count');
+                if (button) button.dataset.baseFollowers = payload.data.followersCount;
+                if (count) count.textContent = formatCompact(payload.data.followersCount);
+              }
+              window.showToast?.(state.followed ? 'Canal seguido.' : 'Voce deixou de seguir o canal.', 'success');
+            } catch (_) {
+              window.showToast?.('Nao foi possivel sincronizar o seguimento agora.', 'error');
+            }
           });
 
           document.getElementById('share-btn')?.addEventListener('click', async () => {

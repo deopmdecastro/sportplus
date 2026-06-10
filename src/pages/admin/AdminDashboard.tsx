@@ -196,23 +196,6 @@ export function AdminDashboard() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Painel Admin | sportplus</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-        <script dangerouslySetInnerHTML={{__html: `
-          tailwind.config = {
-            theme: {
-              extend: {
-                fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'] },
-                colors: {
-                  sport: {
-                    red: '#ef4444',
-                    ink: '#06080c',
-                    panel: '#10141c',
-                  },
-                },
-              },
-            },
-          };
-        `}} />
-        <script src="https://cdn.tailwindcss.com"></script>
         <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
         <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
         <link href="/static/style.css" rel="stylesheet" />
@@ -326,6 +309,7 @@ export function AdminDashboard() {
           const ADMIN_AUDIT_KEY = 'sportplus_admin_audit_v2';
           let currentSection = 'overview';
           let editingId = null;
+          let adminApiCache = { events: [], sports: [], channels: [] };
           let adminPreviewHls = null;
           let adminHlsFallbackRequested = false;
 
@@ -380,6 +364,7 @@ export function AdminDashboard() {
           }
 
           function getItemLabel(item) {
+            if (!item) return '';
             return item.name || item.title || item.email || item.advertiser || item.id;
           }
 
@@ -416,14 +401,65 @@ export function AdminDashboard() {
             else renderManager();
           }
 
+          const ADMIN_API_BASE = window.location.port === '5173' ? 'http://localhost:4000/api' : '/api';
+
+          function adminApiPath(path) {
+            return path.startsWith('/api/') ? ADMIN_API_BASE + path.slice(4) : path;
+          }
+
           function apiFetchJSON(path, init = {}) {
-            return fetch(path, {
+            return fetch(adminApiPath(path), {
               ...init,
               headers: {
                 'Content-Type': 'application/json',
                 ...(init.headers || {}),
               },
             }).then((r) => r.json().then((data) => ({ ok: r.ok, status: r.status, data }))).catch((err) => ({ ok: false, status: 0, data: { error: String(err?.message || err) } }));
+          }
+
+          function eventApiToAdmin(row) {
+            const servers = Array.isArray(row.streamServers) && row.streamServers.length
+              ? row.streamServers
+              : (row.streamUrl ? [{ id: 'server_1', name: 'Servidor 1', url: row.streamUrl }] : []);
+            return {
+              id: row.id,
+              title: row.title || '',
+              thumbnail: row.thumbnail || '',
+              streamUrl: row.streamUrl || servers[0]?.url || '',
+              streamServers: servers,
+              description: row.description || '',
+              sport: row.sport?.name || row.sport || '',
+              sportId: row.sport?.id || '',
+              channel: row.channel?.name || row.channel || '',
+              channelId: row.channel?.id || '',
+              status: row.status || 'upcoming',
+              viewers: Number(row.viewers || 0),
+              likes: Number(row.likes || 0),
+              views: Number(row.views || 0),
+              premium: row.isPremium ? 'yes' : row.premium || 'no',
+              isPremium: Boolean(row.isPremium),
+              isFeatured: Boolean(row.isFeatured),
+              tags: Array.isArray(row.tags) ? row.tags.join(', ') : (row.tags || ''),
+              startTime: row.startTime || '',
+            };
+          }
+
+          async function loadAdminEvents() {
+            const res = await apiFetchJSON('/api/admin/events');
+            if (res?.ok && Array.isArray(res.data?.data)) {
+              adminApiCache.events = res.data.data.map(eventApiToAdmin);
+              return adminApiCache.events;
+            }
+            throw new Error(res?.data?.message || res?.data?.error || 'Falha ao carregar eventos');
+          }
+
+          async function loadAdminSelectData() {
+            const [sportsRes, channelsRes] = await Promise.all([
+              apiFetchJSON('/api/sports'),
+              apiFetchJSON('/api/channels'),
+            ]);
+            if (sportsRes?.ok && Array.isArray(sportsRes.data?.data)) adminApiCache.sports = sportsRes.data.data;
+            if (channelsRes?.ok && Array.isArray(channelsRes.data?.data)) adminApiCache.channels = channelsRes.data.data;
           }
 
           function renderKpiCard(item) {
@@ -560,6 +596,50 @@ export function AdminDashboard() {
           }
 
           async function renderManager() {
+            if (currentSection === 'events') {
+              const tableHead = document.getElementById('admin-table-head');
+              const tableBody = document.getElementById('admin-table-body');
+              const countEl = document.getElementById('admin-count');
+              const schema = ADMIN_SCHEMAS[currentSection];
+              const visibleFields = getVisibleFields(schema);
+
+              const queryText = document.getElementById('admin-search').value.trim().toLowerCase();
+              const statusFilter = document.getElementById('admin-status-filter').value;
+              const statusKey = 'status';
+
+              tableHead.innerHTML = '<tr>' + visibleFields.map((field) => '<th>' + field.label + '</th>').join('') + '<th>Acoes</th></tr>';
+              tableBody.innerHTML = '<tr><td colspan="' + (visibleFields.length + 1) + '" style="color:rgba(255,255,255,0.55)">Carregando eventos...</td></tr>';
+              countEl.textContent = '';
+
+              let rows;
+              try {
+                rows = await loadAdminEvents();
+              } catch (e) {
+                window.showToast?.('Falha ao carregar eventos da API. A usar dados locais.', 'error');
+                rows = storeFallback(currentSection) || [];
+              }
+
+              const filtered = rows.filter((row) => {
+                const textMatch = !queryText || Object.values(row).join(' ').toLowerCase().includes(queryText);
+                const statusMatch = !statusFilter || row[statusKey] === statusFilter;
+                return textMatch && statusMatch;
+              });
+
+              renderSectionSummary(rows, filtered, statusKey);
+              tableBody.innerHTML = filtered.length ? filtered.map((row) =>
+                '<tr>' +
+                  visibleFields.map((field) => '<td>' + formatCell(row[field.key], field, row) + '</td>').join('') +
+                  '<td>' + renderRowActions(row.id, false) + '</td>' +
+                '</tr>'
+              ).join('') : renderEmptyRow(visibleFields.length + 1);
+
+              countEl.textContent = filtered.length + ' de ' + rows.length + ' registos';
+              renderStatusFilter(rows, statusKey);
+              renderTableFooter(filtered.length, rows.length);
+              wireRowActions();
+              return;
+            }
+
             if (currentSection === 'campaigns') {
               const tableHead = document.getElementById('admin-table-head');
               const tableBody = document.getElementById('admin-table-body');
@@ -849,7 +929,9 @@ export function AdminDashboard() {
 
 
           function openView(id) {
-            const item = getStore()[currentSection].find((row) => row.id === id);
+            const item = currentSection === 'events'
+              ? adminApiCache.events.find((row) => String(row.id) === String(id))
+              : getStore()[currentSection].find((row) => row.id === id);
             if (!item) {
               window.showToast?.('Registo nao encontrado.', 'error');
               return;
@@ -884,16 +966,31 @@ export function AdminDashboard() {
             attachAdminVideo('admin-view-video', playableUrl);
           }
 
-          function openForm(mode, id) {
+          async function openForm(mode, id) {
             const store = getStore();
             const schema = ADMIN_SCHEMAS[currentSection];
-            const item = mode === 'edit' ? store[currentSection].find((row) => row.id === id) : {};
+            const item = mode === 'edit'
+              ? (
+                currentSection === 'events'
+                  ? adminApiCache.events.find((row) => String(row.id) === String(id)) || store[currentSection].find((row) => String(row.id) === String(id)) || {}
+                  : store[currentSection].find((row) => row.id === id) || {}
+              )
+              : {};
             const isEditMode = mode === 'edit';
             const singularLabel = ADMIN_SINGULAR[currentSection] || 'registo';
             const modalLabel = singularLabel.charAt(0).toUpperCase() + singularLabel.slice(1);
             const itemLabel = getItemLabel(item) || 'Novo conteudo';
             const titleIcon = isEditMode ? 'ph-pencil-simple' : 'ph-plus-circle';
             editingId = id || null;
+
+            if (currentSection === 'events') {
+              try {
+                await loadAdminSelectData();
+              } catch (_) {}
+              renderEventFormModal(item || {}, isEditMode);
+              showModal();
+              return;
+            }
 
             document.getElementById('admin-modal-title').innerHTML =
               '<span class="admin-modal-title-icon"><i class="ph ' + titleIcon + '"></i></span>' +
@@ -912,6 +1009,120 @@ export function AdminDashboard() {
             document.getElementById('admin-modal-save').addEventListener('click', saveForm);
             wireMediaPreview();
             showModal();
+          }
+
+          function renderEventFormModal(item, isEditMode) {
+            const title = item.title || '';
+            const servers = Array.isArray(item.streamServers) && item.streamServers.length
+              ? item.streamServers
+              : (item.streamUrl ? [{ id: 'server_1', name: 'Servidor 1', url: item.streamUrl }] : [{ id: 'server_1', name: 'Servidor 1', url: '' }]);
+
+            document.getElementById('admin-modal-title').innerHTML =
+              '<span class="admin-modal-title-icon"><i class="ph ' + (isEditMode ? 'ph-pencil-simple' : 'ph-plus-circle') + '"></i></span>' +
+              (isEditMode ? 'Editar Evento' : 'Criar Evento');
+            document.getElementById('admin-modal-subtitle').textContent = isEditMode
+              ? 'Ajuste capa, servidores e metadados de "' + (title || 'evento') + '".'
+              : 'Preencha os dados principais e adicione os servidores de transmissao.';
+
+            document.getElementById('admin-modal-body').innerHTML =
+              '<form id="admin-crud-form" class="admin-event-form">' +
+                '<section class="admin-event-media-card">' +
+                  '<div class="admin-event-cover-preview" data-event-cover-preview>' +
+                    (item.thumbnail ? '<img src="' + escapeAttr(item.thumbnail) + '" alt="" />' : '<div class="admin-preview-empty"><i class="ph ph-image-square"></i><span>Sem capa</span></div>') +
+                  '</div>' +
+                  '<input type="hidden" name="thumbnail" value="' + escapeAttr(item.thumbnail || '') + '" required />' +
+                  '<div class="admin-filezone admin-event-filezone" data-filezone-for="thumbnail">' +
+                    '<div class="admin-filezone-previewrow">' +
+                      '<div class="admin-filezone-thumb" data-thumb-for="thumbnail">' +
+                        (item.thumbnail ? '<img src="' + escapeAttr(item.thumbnail) + '" alt="" />' : '<div class="admin-preview-empty"><i class="ph ph-image-square"></i></div>') +
+                      '</div>' +
+                      '<div class="admin-filezone-main">' +
+                        '<input type="url" class="admin-filezone-url" data-url-input="thumbnail" placeholder="Cole a URL da capa" value="' + escapeAttr(item.thumbnail || '') + '" />' +
+                        '<div class="admin-filezone-cta">' +
+                          '<button type="button" class="admin-filezone-pick"><i class="ph ph-upload-simple"></i>Mudar imagem</button>' +
+                          '<span class="admin-filezone-hint">JPG, PNG ou WEBP</span>' +
+                        '</div>' +
+                        '<div class="admin-filezone-status" data-status-for="thumbnail"></div>' +
+                      '</div>' +
+                    '</div>' +
+                    '<input class="admin-filezone-input" type="file" accept="image/jpeg,image/png,image/webp" style="display:none" />' +
+                  '</div>' +
+                  '<div class="admin-event-mini-card"><strong>' + escapeHtml(title || 'Novo evento') + '</strong><span>Preview da capa e transmissao</span></div>' +
+                '</section>' +
+                '<section class="admin-event-fields-card">' +
+                  '<label class="admin-field-card admin-form-wide"><span>Titulo</span><input name="title" type="text" value="' + escapeAttr(title) + '" required /></label>' +
+                  '<div class="admin-event-grid">' +
+                    renderEventSelect('sport', 'Esporte', adminApiCache.sports, item.sportId, item.sport) +
+                    renderEventSelect('channel', 'Canal', adminApiCache.channels, item.channelId, item.channel) +
+                  '</div>' +
+                  '<div class="admin-event-servers-head"><span>Links de transmissao</span><button type="button" id="admin-add-server"><i class="ph ph-plus-circle"></i>Adicionar servidor</button></div>' +
+                  '<div id="admin-event-servers" class="admin-event-servers">' + servers.map(renderServerRow).join('') + '</div>' +
+                  '<label class="admin-field-card admin-form-wide"><span>Descricao</span><textarea name="description" rows="3" required>' + escapeHtml(item.description || '') + '</textarea></label>' +
+                  '<div class="admin-event-grid">' +
+                    renderStaticSelect('status', 'Status', ['live', 'upcoming', 'ended', 'replay'], item.status || 'upcoming') +
+                    '<label class="admin-field-card"><span>Viewers</span><input name="viewers" type="number" value="' + escapeAttr(String(item.viewers || 0)) + '" min="0" /></label>' +
+                    renderStaticSelect('premium', 'Premium', ['no', 'yes'], item.premium || 'no') +
+                    '<label class="admin-field-card"><span>Tags</span><input name="tags" type="text" value="' + escapeAttr(item.tags || '') + '" placeholder="futebol, final, hd" /></label>' +
+                  '</div>' +
+                '</section>' +
+              '</form>';
+
+            document.getElementById('admin-modal-actions').innerHTML =
+              '<button type="button" class="admin-action" id="admin-modal-cancel"><i class="ph ph-x"></i>Cancelar</button>' +
+              '<button type="button" class="admin-action admin-action-primary" id="admin-modal-save"><i class="ph ph-floppy-disk"></i>' + (isEditMode ? 'Salvar Alteracoes' : 'Criar Evento') + '</button>';
+            document.getElementById('admin-modal-cancel').addEventListener('click', closeModal);
+            document.getElementById('admin-modal-save').addEventListener('click', saveForm);
+            document.getElementById('admin-add-server').addEventListener('click', addServerRow);
+            wireMediaPreview();
+            wireEventServerRows();
+          }
+
+          function renderEventSelect(name, label, options, value, labelFallback) {
+            const selected = String(value || '');
+            const items = (options || []).map((option) => {
+              const optionValue = String(option.id || option.slug || option.name || '');
+              const optionLabel = String(option.name || option.slug || option.id || '');
+              return '<option value="' + escapeAttr(optionValue) + '"' + (optionValue === selected || optionLabel === labelFallback ? ' selected' : '') + '>' + escapeHtml(optionLabel) + '</option>';
+            }).join('');
+            return '<label class="admin-field-card"><span>' + label + '</span><select name="' + name + '" required><option value="">Selecionar</option>' + items + '</select></label>';
+          }
+
+          function renderStaticSelect(name, label, options, value) {
+            return '<label class="admin-field-card"><span>' + label + '</span><select name="' + name + '">' +
+              options.map((option) => '<option value="' + escapeAttr(option) + '"' + (option === value ? ' selected' : '') + '>' + escapeHtml(option) + '</option>').join('') +
+              '</select></label>';
+          }
+
+          function renderServerRow(server, index) {
+            const serverIndex = index + 1;
+            return '<div class="admin-event-server-row">' +
+              '<span>Servidor ' + serverIndex + '</span>' +
+              '<input type="text" data-server-name value="' + escapeAttr(server.name || ('Servidor ' + serverIndex)) + '" aria-label="Nome do servidor" />' +
+              '<input type="url" data-server-url placeholder="https://..." value="' + escapeAttr(server.url || '') + '" ' + (serverIndex === 1 ? 'required' : '') + ' />' +
+              '<button type="button" data-remove-server aria-label="Remover servidor"><i class="ph ph-trash"></i></button>' +
+            '</div>';
+          }
+
+          function addServerRow() {
+            const list = document.getElementById('admin-event-servers');
+            if (!list) return;
+            const count = list.querySelectorAll('.admin-event-server-row').length;
+            list.insertAdjacentHTML('beforeend', renderServerRow({ name: 'Servidor ' + (count + 1), url: '' }, count));
+            wireEventServerRows();
+          }
+
+          function wireEventServerRows() {
+            const rows = document.querySelectorAll('.admin-event-server-row');
+            rows.forEach((row, index) => {
+              row.querySelector('span').textContent = 'Servidor ' + (index + 1);
+              const remove = row.querySelector('[data-remove-server]');
+              remove.disabled = rows.length <= 1;
+              remove.onclick = () => {
+                if (document.querySelectorAll('.admin-event-server-row').length <= 1) return;
+                row.remove();
+                wireEventServerRows();
+              };
+            });
           }
 
           function renderField(field, value) {
@@ -1001,6 +1212,12 @@ export function AdminDashboard() {
           }
 
           function updateImagePreview(url) {
+            const cover = document.querySelector('[data-event-cover-preview]');
+            if (cover) {
+              cover.innerHTML = url
+                ? '<img src="' + escapeAttr(url) + '" alt="" />'
+                : '<div class="admin-preview-empty"><i class="ph ph-image-square"></i><span>Sem capa</span></div>';
+            }
             const frame = document.querySelector('.admin-edit-preview-frame');
             if (!frame) return;
             frame.innerHTML = url
@@ -1036,6 +1253,7 @@ export function AdminDashboard() {
             urlInput?.addEventListener('input', () => {
               if (hidden) hidden.value = urlInput.value || '';
               updateThumb(urlInput.value || '');
+              if (['thumbnail', 'avatar', 'imageUrl', 'cover', 'capa'].includes(fieldKey)) updateImagePreview(urlInput.value || '');
               if (urlInput.value) setZoneStatus(zone, 'URL definida.', 'success');
             });
 
@@ -1076,7 +1294,7 @@ export function AdminDashboard() {
                 formData.append('field', key);
 
                 // Persistently store image and get URL
-                const res = await fetch('/api/admin/upload-image', { method: 'POST', body: formData });
+                const res = await fetch(adminApiPath('/api/admin/upload-image'), { method: 'POST', body: formData });
                 const json = await res.json().catch(() => ({}));
                 if (!res.ok || !json?.success || !json?.url) {
                   throw new Error(json?.error || 'Upload falhou');
@@ -1204,6 +1422,28 @@ export function AdminDashboard() {
             return escapeHtml(value).replace(/\\n/g, ' ');
           }
 
+          function getEventFormPayload(form) {
+            const servers = Array.from(document.querySelectorAll('.admin-event-server-row')).map((row, index) => ({
+              id: 'server_' + (index + 1),
+              name: row.querySelector('[data-server-name]')?.value?.trim() || 'Servidor ' + (index + 1),
+              url: row.querySelector('[data-server-url]')?.value?.trim() || '',
+            })).filter((server) => server.url);
+
+            return {
+              title: form.elements.title?.value?.trim() || '',
+              thumbnail: form.elements.thumbnail?.value?.trim() || '',
+              description: form.elements.description?.value?.trim() || '',
+              sport: form.elements.sport?.value || '',
+              channel: form.elements.channel?.value || '',
+              status: form.elements.status?.value || 'upcoming',
+              viewers: Number(form.elements.viewers?.value || 0),
+              premium: form.elements.premium?.value || 'no',
+              tags: form.elements.tags?.value || '',
+              streamUrl: servers[0]?.url || '',
+              streamServers: servers,
+            };
+          }
+
           async function saveForm() {
             const form = document.getElementById('admin-crud-form');
             if (!form) {
@@ -1217,6 +1457,41 @@ export function AdminDashboard() {
 
             // Suporte para payloads quando o campo nao existe no form (ex: quando imagem vem do backend)
             try {
+              if (currentSection === 'events') {
+                const payload = getEventFormPayload(form);
+                if (!payload.streamServers.length) {
+                  window.showToast?.('Adicione pelo menos um servidor de transmissao.', 'error');
+                  return;
+                }
+
+                const saveButton = document.getElementById('admin-modal-save');
+                if (saveButton) {
+                  saveButton.disabled = true;
+                  saveButton.innerHTML = '<i class="ph ph-spinner-gap"></i>Guardando...';
+                }
+
+                const res = await apiFetchJSON(editingId ? '/api/admin/events/' + encodeURIComponent(editingId) : '/api/admin/events', {
+                  method: editingId ? 'PUT' : 'POST',
+                  body: JSON.stringify(payload),
+                });
+
+                if (!res?.ok || !res?.data?.success) {
+                  window.showToast?.(res?.data?.message || res?.data?.error || 'Erro ao guardar evento na API.', 'error');
+                  if (saveButton) {
+                    saveButton.disabled = false;
+                    saveButton.innerHTML = '<i class="ph ph-floppy-disk"></i>' + (editingId ? 'Salvar Alteracoes' : 'Criar Evento');
+                  }
+                  return;
+                }
+
+                addAudit(editingId ? 'Editou' : 'Criou', currentSection, payload.title);
+                window.showToast?.(editingId ? 'Evento atualizado com sucesso.' : 'Evento criado com sucesso.', 'success');
+                closeModal();
+                renderTabs();
+                await renderManager();
+                return;
+              }
+
               schema.forEach((field) => {
                 const input = form.elements[field.key];
                 if (!input) {
@@ -1289,10 +1564,12 @@ export function AdminDashboard() {
 
 
           function openDelete(id) {
-            const item = getStore()[currentSection].find((row) => row.id === id);
+            const item = currentSection === 'events'
+              ? adminApiCache.events.find((row) => String(row.id) === String(id))
+              : getStore()[currentSection].find((row) => row.id === id);
             document.getElementById('admin-modal-title').textContent = 'Apagar registo';
-            document.getElementById('admin-modal-subtitle').textContent = getItemLabel(item);
-            document.getElementById('admin-modal-body').innerHTML = '<p style="color:rgba(255,255,255,0.72);font-size:14px;margin:0">Esta acao remove o registo do painel local. Podes repor os dados pelo botao Repor dados.</p>';
+            document.getElementById('admin-modal-subtitle').textContent = getItemLabel(item || {});
+            document.getElementById('admin-modal-body').innerHTML = '<p style="color:rgba(255,255,255,0.72);font-size:14px;margin:0">Esta acao remove o registo' + (currentSection === 'events' ? ' da API.' : ' do painel local. Podes repor os dados pelo botao Repor dados.') + '</p>';
             document.getElementById('admin-modal-actions').innerHTML =
               '<button class="admin-action" id="admin-modal-cancel">Cancelar</button><button class="admin-action admin-danger-button" id="admin-modal-delete">Apagar</button>';
             document.getElementById('admin-modal-cancel').addEventListener('click', closeModal);
@@ -1300,7 +1577,22 @@ export function AdminDashboard() {
             showModal();
           }
 
-          function deleteItem(id) {
+          async function deleteItem(id) {
+            if (currentSection === 'events') {
+              const item = adminApiCache.events.find((row) => String(row.id) === String(id));
+              const res = await apiFetchJSON('/api/admin/events/' + encodeURIComponent(id), { method: 'DELETE' });
+              if (!res?.ok || !res?.data?.success) {
+                window.showToast?.(res?.data?.message || res?.data?.error || 'Erro ao apagar evento.', 'error');
+                return;
+              }
+              addAudit('Apagou', currentSection, getItemLabel(item || { id }));
+              closeModal();
+              renderTabs();
+              await renderManager();
+              window.showToast?.('Evento apagado.', 'success');
+              return;
+            }
+
             const store = getStore();
             const item = store[currentSection].find((row) => row.id === id);
             store[currentSection] = store[currentSection].filter((row) => row.id !== id);

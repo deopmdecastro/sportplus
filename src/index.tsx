@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { logger } from 'hono/logger'
 import { secureHeaders } from 'hono/secure-headers'
-import { apiRouter } from './routes/api'
+import { getServerApiBaseUrl, loadEventData, loadHomePageData, loadVideoPageData } from './lib/apiClient'
 
 // Pages
 import { HomePage } from './pages/HomePage'
@@ -20,6 +20,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard'
 const app = new Hono()
 const siteUrl = 'https://sportplus.example'
 const publicRoutes = ['/', '/explorar', '/ao-vivo', '/highlights', '/login', '/cadastro', '/criador', '/admin', '/esportes']
+const apiProxyBaseUrl = 'http://localhost:4000'
 
 // ==============================
 // MIDDLEWARE
@@ -58,15 +59,34 @@ app.get('/sitemap.xml', (c) => {
 // ==============================
 // API ROUTES
 // ==============================
-app.route('/api', apiRouter)
+app.all('/api/*', async (c) => {
+  const sourceUrl = new URL(c.req.url)
+  const targetUrl = `${apiProxyBaseUrl}${sourceUrl.pathname}${sourceUrl.search}`
+  const headers = new Headers(c.req.raw.headers)
+  headers.delete('host')
+
+  try {
+    const method = c.req.method
+    const body = method === 'GET' || method === 'HEAD' ? undefined : await c.req.arrayBuffer()
+    const response = await fetch(targetUrl, { method, headers, body })
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    })
+  } catch (error) {
+    return c.json({ success: false, message: 'API indisponivel', error: String(error) }, 502)
+  }
+})
 
 // ==============================
 // PUBLIC PAGES
 // ==============================
 
 // Home
-app.get('/', (c) => {
-  return c.html(<HomePage />)
+app.get('/', async (c) => {
+  const data = await loadHomePageData(getServerApiBaseUrl(c.env))
+  return c.html(<HomePage data={data} />)
 })
 
 // Explore
@@ -117,15 +137,17 @@ app.get('/ao-vivo', (c) => {
 })
 
 // Single Event Page
-app.get('/evento/:id', (c) => {
+app.get('/evento/:id', async (c) => {
   const eventId = c.req.param('id')
-  return c.html(<LiveEventPage eventId={eventId} />)
+  const event = await loadEventData(getServerApiBaseUrl(c.env), eventId)
+  return c.html(<LiveEventPage eventId={eventId} event={event} />)
 })
 
 // Video Player Page
-app.get('/video/:id', (c) => {
+app.get('/video/:id', async (c) => {
   const videoId = c.req.param('id')
-  return c.html(<VideoPlayerPage videoId={videoId} />)
+  const data = await loadVideoPageData(getServerApiBaseUrl(c.env), videoId)
+  return c.html(<VideoPlayerPage videoId={videoId} data={data} />)
 })
 
 // ==============================
