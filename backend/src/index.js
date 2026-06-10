@@ -3,15 +3,25 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { getDatabaseHealth, query } from './db.js'
+import { saveUploadedImage } from './imageUpload.js'
+import { createRateLimiter, fail, getJsonBody, requestContext } from './http.js'
+import { parseMultipartFormData } from 'hono/form-data'
+
 
 const app = new Hono()
 const api = new Hono()
 const adminEmail = process.env.ADMIN_EMAIL || 'admin@sportplus.test'
 const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123'
 const demoUserPassword = process.env.DEMO_USER_PASSWORD || 'User@123'
+const corsOrigin = process.env.CORS_ORIGIN || (process.env.NODE_ENV === 'production' ? 'https://sportplus.example' : '*')
 
+api.use('*', requestContext)
+api.use('*', createRateLimiter({
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000),
+  max: Number(process.env.RATE_LIMIT_MAX || 240),
+}))
 api.use('*', cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: corsOrigin,
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowHeaders: ['Content-Type', 'Authorization'],
 }))
@@ -20,14 +30,14 @@ api.onError((error, c) => {
   console.error(error)
 
   if (error.code === '23505') {
-    return c.json({ success: false, error: 'Registro duplicado' }, 409)
+    return fail(c, { status: 409, message: 'Registro duplicado', errors: ['duplicate_record'] })
   }
 
   if (error.code === '23502') {
-    return c.json({ success: false, error: 'Dados obrigatorios em falta' }, 400)
+    return fail(c, { status: 400, message: 'Dados obrigatorios em falta', errors: ['missing_required_data'] })
   }
 
-  return c.json({ success: false, error: 'Erro interno do servidor' }, 500)
+  return fail(c, { status: 500, message: 'Erro interno do servidor', errors: ['internal_server_error'] })
 })
 
 const toNumber = (value, fallback) => {
@@ -186,16 +196,17 @@ const fetchFootballLiveScore = async (event) => {
 api.get('/health', async (c) => {
   try {
     const database = await getDatabaseHealth()
-    return c.json({
+    const health = {
       status: 'ok',
-      service: 'SPORT+ API',
+      service: 'sportplus API',
       version: '1.0.0',
       environment: process.env.NODE_ENV || 'development',
       database,
       timestamp: new Date().toISOString(),
-    })
+    }
+    return c.json({ success: true, message: 'API healthy', data: health, errors: [], ...health })
   } catch (error) {
-    return c.json({ status: 'error', database: { ok: false }, error: error.message }, 503)
+    return fail(c, { status: 503, message: 'API unhealthy', errors: [error.message] })
   }
 })
 
@@ -307,12 +318,12 @@ api.get('/events/:id', async (c) => {
 
 api.post('/events/:id/view', async (c) => {
   await ensureEventViewsTable()
-  const body = await c.req.json().catch(() => ({}))
+  const body = await getJsonBody(c)
   const viewerKey = String(body.viewerKey || '').trim()
-  if (!viewerKey) return c.json({ success: false, error: 'viewerKey obrigatorio' }, 400)
+  if (!viewerKey) return fail(c, { status: 400, message: 'viewerKey obrigatorio', errors: ['viewer_key_required'] })
 
   const [event] = await query('select id from events where id = $1', [c.req.param('id')])
-  if (!event) return c.json({ success: false, error: 'Event not found' }, 404)
+  if (!event) return fail(c, { status: 404, message: 'Event not found', errors: ['event_not_found'] })
 
   await query(
     'insert into event_views (event_id, viewer_key) values ($1, $2) on conflict (event_id, viewer_key) do nothing',
@@ -383,7 +394,7 @@ api.get('/ads/serve', async (c) => {
 })
 
 api.post('/ads/track', async (c) => {
-  const body = await c.req.json().catch(() => ({}))
+  const body = await getJsonBody(c)
   await query(
     'insert into ad_events (ad_id, event_type, impression_id, payload) values ($1, $2, $3, $4)',
     [body.adId || null, body.eventType || 'impression', body.impressionId || null, body],
@@ -392,7 +403,7 @@ api.post('/ads/track', async (c) => {
 })
 
 api.post('/ads/click', async (c) => {
-  const body = await c.req.json().catch(() => ({}))
+  const body = await getJsonBody(c)
   await query(
     'insert into ad_events (ad_id, event_type, impression_id, payload) values ($1, $2, $3, $4)',
     [body.adId || null, 'click', body.impressionId || null, body],
@@ -412,40 +423,40 @@ api.get('/users/:id', async (c) => {
 })
 
 api.post('/auth/login', async (c) => {
-  const body = await c.req.json().catch(() => ({}))
+  const body = await getJsonBody(c)
   if (!body.email || !body.password) {
-    return c.json({ success: false, error: 'Email e senha sao obrigatorios' }, 400)
+    return fail(c, { status: 400, message: 'Email e senha sao obrigatorios', errors: ['email_password_required'] })
   }
 
   if (body.email === adminEmail) {
     if (body.password !== adminPassword) {
-      return c.json({ success: false, error: 'Credenciais invalidas' }, 401)
+      return fail(c, { status: 401, message: 'Credenciais invalidas', errors: ['invalid_credentials'] })
     }
 
     return c.json({
       success: true,
       token: `sport_admin_${Date.now()}_jwt_token`,
-      user: { id: 'admin', name: 'Admin SPORT+', email: adminEmail, role: 'admin', plan: 'premium', followersCount: 0, followingCount: 0, createdAt: '2026-06-06', isVerified: true },
+      user: { id: 'admin', name: 'Admin sportplus', email: adminEmail, role: 'admin', plan: 'premium', followersCount: 0, followingCount: 0, createdAt: '2026-06-06', isVerified: true },
       expiresIn: 86400,
     })
   }
 
   const [user] = await query('select * from users where email = $1', [body.email])
-  if (!user) return c.json({ success: false, error: 'Credenciais invalidas' }, 401)
-  if (body.password !== demoUserPassword) return c.json({ success: false, error: 'Credenciais invalidas' }, 401)
+  if (!user) return fail(c, { status: 401, message: 'Credenciais invalidas', errors: ['invalid_credentials'] })
+  if (body.password !== demoUserPassword) return fail(c, { status: 401, message: 'Credenciais invalidas', errors: ['invalid_credentials'] })
 
   return c.json({ success: true, token: `sport_${Date.now()}_jwt_token`, user: mapRecord(user), expiresIn: 86400 })
 })
 
 api.post('/auth/register', async (c) => {
-  const body = await c.req.json().catch(() => ({}))
+  const body = await getJsonBody(c)
   if (!body.email || !body.password || !body.name) {
-    return c.json({ success: false, error: 'Dados incompletos' }, 400)
+    return fail(c, { status: 400, message: 'Dados incompletos', errors: ['incomplete_payload'] })
   }
 
   const [existingUser] = await query('select id from users where email = $1', [body.email])
   if (existingUser) {
-    return c.json({ success: false, error: 'Email ja cadastrado' }, 409)
+    return fail(c, { status: 409, message: 'Email ja cadastrado', errors: ['email_already_registered'] })
   }
 
   const [user] = await query(
@@ -477,9 +488,9 @@ api.get('/admin/campaigns', async (c) => {
 })
 
 api.post('/admin/campaigns', async (c) => {
-  const body = await c.req.json().catch(() => ({}))
+  const body = await getJsonBody(c)
   if (!body.name || !body.advertiser) {
-    return c.json({ success: false, error: 'Nome e anunciante sao obrigatorios' }, 400)
+    return fail(c, { status: 400, message: 'Nome e anunciante sao obrigatorios', errors: ['name_advertiser_required'] })
   }
 
   const [campaign] = await query(
@@ -529,10 +540,37 @@ api.get('/search', async (c) => {
 
 api.post('/auth/logout', (c) => c.json({ success: true, message: 'Logout realizado com sucesso' }))
 
+// ==============================
+// IMAGE UPLOAD (admin)
+// ==============================
+
+api.post('/admin/upload-image', async (c) => {
+  try {
+    const form = await parseMultipartFormData(c.req.raw)
+    const field = String(form.field || '').trim() || 'image'
+    const image = form.image
+    const filename = image?.name
+    const mimeType = image?.type
+
+    const result = await saveUploadedImage({
+      file: image,
+      originalName: filename,
+      mimeType,
+      field,
+    })
+
+    return c.json({ success: true, url: result.url, filename: result.filename, size: result.size })
+  } catch (error) {
+    console.error(error)
+    return c.json({ success: false, error: error?.message || 'Upload error' }, 400)
+  }
+})
+
 app.route('/api', api)
-app.get('/', (c) => c.json({ service: 'SPORT+ API', docs: '/api/health' }))
+app.get('/', (c) => c.json({ service: 'sportplus API', docs: '/api/health' }))
+
 
 const port = Number(process.env.PORT || 4000)
 serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`SPORT+ API listening on http://localhost:${info.port}`)
+  console.log(`sportplus API listening on http://localhost:${info.port}`)
 })

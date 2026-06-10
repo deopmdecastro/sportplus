@@ -6,7 +6,7 @@ export function RegisterPage() {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Criar Conta | SPORT+</title>
+        <title>Criar Conta | sportplus</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
         <link href="/static/style.css" rel="stylesheet" />
         <script src="/static/notifications.js" defer></script>
@@ -97,7 +97,7 @@ export function RegisterPage() {
               <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:24px">
                 <input type="checkbox" id="terms" required style="margin-top:2px;accent-color:#ef4444" />
                 <label for="terms" style="color:rgba(255,255,255,0.5);font-size:12px;line-height:1.5">
-                  Concordo com os <a href="/termos" style="color:#ef4444">Termos de Uso</a> e <a href="/privacidade" style="color:#ef4444">Política de Privacidade</a> do SPORT+
+                  Concordo com os <a href="/termos" style="color:#ef4444">Termos de Uso</a> e <a href="/privacidade" style="color:#ef4444">Política de Privacidade</a> do sportplus
                 </label>
               </div>
 

@@ -11,7 +11,7 @@ export function Footer() {
               <div style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:8px">
                 <span style="color:white;font-weight:900;font-size:18px">S</span>
               </div>
-              <span style="color:white;font-weight:900;font-size:22px;letter-spacing:-0.5px">SPORT<span style="color:#ef4444">+</span></span>
+              <span style="color:white;font-weight:900;font-size:22px;letter-spacing:-0.5px">sportplus</span>
             </div>
             <p style="color:rgba(255,255,255,0.5);font-size:14px;line-height:1.7;margin-bottom:20px;max-width:280px">
               A maior plataforma de streaming esportivo do Brasil. Assista ao vivo, replays e highlights dos seus esportes favoritos.
@@ -65,7 +65,7 @@ export function Footer() {
 
         {/* Bottom */}
         <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
-          <p style="color:rgba(255,255,255,0.3);font-size:13px">© 2024 SPORT+. Todos os direitos reservados.</p>
+          <p style="color:rgba(255,255,255,0.3);font-size:13px">© 2024 sportplus. Todos os direitos reservados.</p>
           <div style="display:flex;align-items:center;gap:16px">
             <span style="display:flex;align-items:center;gap:6px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:20px;padding:4px 12px">
               <span style="width:6px;height:6px;background:#ef4444;border-radius:50%;animation:pulse 1.5s infinite"></span>

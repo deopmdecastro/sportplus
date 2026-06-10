@@ -9,7 +9,7 @@ insert into sports (id, name, slug, icon, color, "liveCount", "totalEvents") val
 on conflict (id) do nothing;
 
 insert into users (id, name, email, role, plan, "followersCount", "followingCount", "createdAt", "isVerified", avatar) values
-  ('admin', 'Admin SPORT+', 'admin@sportplus.test', 'admin', 'premium', 0, 0, '2026-06-06', true, null),
+  ('admin', 'Admin sportplus', 'admin@sportplus.test', 'admin', 'premium', 0, 0, '2026-06-06', true, null),
   ('1', 'Carlos Drummond', 'carlos@sport.com', 'creator', 'premium', 48200, 120, '2023-01-15', true, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Carlos'),
   ('2', 'Ana Beatriz', 'ana@sport.com', 'creator', 'pro', 22100, 85, '2023-03-22', true, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana'),
   ('3', 'Joao Silva', 'joao@sport.com', 'viewer', 'free', 0, 45, '2024-01-10', false, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Joao')

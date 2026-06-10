@@ -23,7 +23,7 @@ export function AdminDashboard() {
         plan: user.plan,
         status: user.isVerified ? 'verified' : 'pending',
       })),
-      { id: 'admin', name: 'Admin SPORT+', email: adminEmail, role: 'admin', plan: 'premium', status: 'verified' },
+      { id: 'admin', name: 'Admin sportplus', email: adminEmail, role: 'admin', plan: 'premium', status: 'verified' },
     ],
     events: [...liveEvents, ...upcomingEvents].map((event) => ({
       id: event.id,
@@ -178,47 +178,89 @@ export function AdminDashboard() {
     settings: 'Sistema',
   }
 
+  const sectionSingular = {
+    users: 'usuario',
+    events: 'evento',
+    videos: 'video',
+    channels: 'canal',
+    campaigns: 'campanha',
+    ads: 'anuncio',
+    sports: 'esporte',
+    settings: 'configuracao',
+  }
+
   return (
     <html>
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Painel Admin | SPORT+</title>
+        <title>Painel Admin | sportplus</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        <script dangerouslySetInnerHTML={{__html: `
+          tailwind.config = {
+            theme: {
+              extend: {
+                fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'] },
+                colors: {
+                  sport: {
+                    red: '#ef4444',
+                    ink: '#06080c',
+                    panel: '#10141c',
+                  },
+                },
+              },
+            },
+          };
+        `}} />
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+        <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
         <link href="/static/style.css" rel="stylesheet" />
-        <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
+
         <script src="/static/notifications.js" defer></script>
+
+
+
+
       </head>
-      <body style="background:#080808;min-height:100vh">
-        <div id="admin-guard" style="display:none;min-height:100vh">
-          <aside class="admin-sidebar" style="width:270px;background:#0a0a0a;border-right:1px solid rgba(255,255,255,0.06);padding:20px 16px;position:fixed;inset:0 auto 0 0;display:flex;flex-direction:column">
-            <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;margin-bottom:8px;padding:0 8px">
-              <div style="width:32px;height:32px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:6px;display:flex;align-items:center;justify-content:center">
-                <span style="color:white;font-weight:900;font-size:16px">S</span>
+
+
+      <body class="min-h-screen bg-sport-ink text-white antialiased">
+        <div id="admin-guard" class="min-h-screen" style="display:none">
+          <aside class="admin-sidebar fixed inset-y-0 left-0 z-30 flex w-[270px] flex-col border-r border-white/10 bg-[#070a10]/95 px-4 py-5 shadow-2xl">
+            <a href="/" class="admin-brand group">
+              <div class="admin-brand-mark transition-transform group-hover:scale-105">
+                <span>S+</span>
               </div>
-              <span style="color:white;font-weight:900;font-size:18px">SPORT<span style="color:#ef4444">+</span></span>
+              <div>
+                <strong>sportplus</strong>
+                <small>Painel admin</small>
+              </div>
             </a>
-            <div style="color:rgba(255,255,255,0.35);font-size:11px;font-weight:700;letter-spacing:1px;padding:0 8px 16px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:16px">PAINEL ADMIN</div>
-            <nav id="admin-tabs" style="display:flex;flex-direction:column;gap:4px;flex:1"></nav>
-            <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px">
-              <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.18);border-radius:8px;padding:10px 12px;margin-bottom:10px">
-                <div style="color:white;font-size:13px;font-weight:800">Administrador</div>
-                <div id="admin-email-label" style="color:rgba(255,255,255,0.42);font-size:11px">{adminEmail}</div>
+            <nav id="admin-tabs" class="flex flex-1 flex-col gap-1"></nav>
+            <div class="border-t border-white/10 pt-3">
+              <div class="admin-user-card">
+                <span>A</span>
+                <div>
+                  <strong>Administrador</strong>
+                  <small id="admin-email-label">{adminEmail}</small>
+                </div>
               </div>
-              <button id="admin-logout" type="button" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:white;padding:10px 12px;cursor:pointer;font-weight:700">Sair</button>
+              <button id="admin-logout" type="button" class="admin-action admin-logout-action w-full justify-center"><i class="ph ph-sign-out"></i>Sair</button>
             </div>
           </aside>
 
-          <main class="admin-main" style="margin-left:270px;padding:28px;min-height:100vh">
+          <main class="admin-main ml-[270px] min-h-screen p-7">
             <header class="admin-topbar">
               <div>
-                <h1 id="admin-title">Gestao SPORT+</h1>
+                <h1 id="admin-title">Gestao sportplus</h1>
                 <p id="admin-subtitle">Crie, visualize, edite e remova dados da plataforma.</p>
               </div>
               <div class="admin-top-actions">
-                <button id="admin-reset" class="admin-action">Repor dados</button>
-                <button id="admin-export" class="admin-action">Exportar JSON</button>
-                <button id="admin-create" class="admin-action admin-action-primary">Criar</button>
+                <button id="admin-report" class="admin-action"><i class="ph ph-chart-bar"></i>Relatorio</button>
+                <button id="admin-reset" class="admin-action"><i class="ph ph-arrow-counter-clockwise"></i>Repor dados</button>
+                <button id="admin-export" class="admin-action"><i class="ph ph-file-json"></i>Exportar JSON</button>
+                <button id="admin-create" class="admin-action admin-action-primary"><i class="ph ph-plus"></i><span>+ Criar</span></button>
               </div>
             </header>
 
@@ -240,6 +282,7 @@ export function AdminDashboard() {
             </section>
 
             <section id="admin-manager" class="admin-panel">
+              <div id="admin-section-summary" class="admin-section-summary"></div>
               <div class="admin-toolbar">
                 <div class="admin-search-wrap">
                   <input id="admin-search" type="search" placeholder="Pesquisar..." />
@@ -255,6 +298,7 @@ export function AdminDashboard() {
                   <tbody id="admin-table-body"></tbody>
                 </table>
               </div>
+              <div id="admin-table-footer" class="admin-table-footer"></div>
             </section>
           </main>
         </div>
@@ -277,6 +321,7 @@ export function AdminDashboard() {
           const ADMIN_SEED = ${JSON.stringify(seed).replace(/</g, '\\u003c')};
           const ADMIN_SCHEMAS = ${JSON.stringify(schemas).replace(/</g, '\\u003c')};
           const ADMIN_LABELS = ${JSON.stringify(sectionLabels).replace(/</g, '\\u003c')};
+          const ADMIN_SINGULAR = ${JSON.stringify(sectionSingular).replace(/</g, '\\u003c')};
           const ADMIN_STORAGE_KEY = 'sportplus_admin_store_v6';
           const ADMIN_AUDIT_KEY = 'sportplus_admin_audit_v2';
           let currentSection = 'overview';
@@ -338,14 +383,34 @@ export function AdminDashboard() {
             return item.name || item.title || item.email || item.advertiser || item.id;
           }
 
+          const ADMIN_ICONS = {
+            overview: 'ph-squares-four',
+            users: 'ph-users-three',
+            events: 'ph-calendar-blank',
+            videos: 'ph-video-camera',
+            channels: 'ph-monitor-play',
+            campaigns: 'ph-briefcase',
+            ads: 'ph-megaphone',
+            sports: 'ph-soccer-ball',
+            settings: 'ph-gear-six',
+          };
+
+          function formatNumber(value) {
+            const number = Number(value || 0);
+            return new Intl.NumberFormat('pt-PT').format(number);
+          }
+
           function activateSection(section) {
             currentSection = section;
+            document.body.dataset.adminSection = section;
             document.querySelectorAll('.admin-tab').forEach((tab) => tab.classList.toggle('admin-tab-active', tab.dataset.section === section));
             document.getElementById('admin-overview').classList.toggle('is-active', section === 'overview');
             document.getElementById('admin-manager').classList.toggle('is-active', section !== 'overview');
             document.getElementById('admin-create').style.display = section === 'overview' ? 'none' : 'inline-flex';
-            document.getElementById('admin-title').textContent = section === 'overview' ? 'Gestao SPORT+' : ADMIN_LABELS[section];
+            document.getElementById('admin-create').innerHTML = '<i class="ph ph-plus"></i><span>Criar ' + (ADMIN_SINGULAR[section] || 'registo') + '</span>';
+            document.getElementById('admin-title').textContent = section === 'overview' ? 'Gestao sportplus' : ADMIN_LABELS[section];
             document.getElementById('admin-subtitle').textContent = section === 'overview' ? 'Crie, visualize, edite e remova dados da plataforma.' : 'Gestao de ' + ADMIN_LABELS[section].toLowerCase() + '.';
+            document.getElementById('admin-search').placeholder = section === 'overview' ? 'Pesquisar...' : 'Buscar ' + ADMIN_LABELS[section].toLowerCase() + '...';
 
             if (section === 'overview') renderOverview();
             else renderManager();
@@ -361,6 +426,19 @@ export function AdminDashboard() {
             }).then((r) => r.json().then((data) => ({ ok: r.ok, status: r.status, data }))).catch((err) => ({ ok: false, status: 0, data: { error: String(err?.message || err) } }));
           }
 
+          function renderKpiCard(item) {
+            const section = sectionIdFromLabel(item[0]);
+            const icon = ADMIN_ICONS[section] || 'ph-circle';
+            return '<button type="button" class="admin-card admin-kpi-button" data-jump="' + section + '">' +
+              '<span class="admin-kpi-icon"><i class="ph ' + icon + '"></i></span>' +
+              '<div class="admin-kpi-copy">' +
+                '<div class="admin-kpi-label">' + item[0] + '</div>' +
+                '<div class="admin-kpi-value">' + formatNumber(item[1]) + '</div>' +
+                '<div class="admin-kpi-sub">Gerir agora</div>' +
+              '</div>' +
+            '</button>';
+          }
+
           function renderTabs() {
             const store = getStore();
             const tabs = [{ id: 'overview', label: 'Overview', count: 'live' }].concat(Object.keys(ADMIN_SCHEMAS).map((id) => ({
@@ -371,7 +449,7 @@ export function AdminDashboard() {
 
             document.getElementById('admin-tabs').innerHTML = tabs.map((tab) =>
               '<button type="button" class="admin-tab ' + (tab.id === currentSection ? 'admin-tab-active' : '') + '" data-section="' + tab.id + '">' +
-                '<span>' + tab.label + '</span><small>' + tab.count + '</small>' +
+                '<span><i class="ph ' + (ADMIN_ICONS[tab.id] || 'ph-circle') + '"></i>' + tab.label + '</span><small>' + tab.count + '</small>' +
               '</button>'
             ).join('');
 
@@ -379,39 +457,59 @@ export function AdminDashboard() {
           }
 
           async function renderOverview() {
-            // Quando disponível, usar backend real.
             const kpiRoot = document.getElementById('admin-kpis');
-            if (kpiRoot) kpiRoot.innerHTML = '<div style="color:rgba(255,255,255,0.55);font-size:13px">Carregando stats...</div>';
+            if (kpiRoot) {
+              kpiRoot.innerHTML = '<div style="color:rgba(255,255,255,0.55);font-size:13px">Carregando stats...</div>';
+            }
 
-            const res = await apiFetchJSON('/api/admin/stats');
-            if (res?.ok && res.data?.data) {
+            let res;
+            try {
+              res = await apiFetchJSON('/api/admin/stats');
+            } catch (e) {
+              res = null;
+            }
+
+            const hasData = !!(res?.ok && res?.data?.data);
+            if (hasData) {
               const d = res.data.data;
               const kpis = [
-                ['Usuarios', d.totalUsers],
-                ['Eventos', d.totalEvents],
+                ['Usuarios', d.totalUsers ?? 0],
+                ['Eventos', d.totalEvents ?? 0],
                 ['Videos', (storeFallback('videos') || []).length || 0],
-                ['Campanhas ativas', (d.campaigns || []).filter((item) => item.status === 'active').length],
+                ['Campanhas ativas', (d.campaigns || []).filter((item) => item.status === 'active').length || 0],
                 ['Anuncios', (storeFallback('ads') || []).length || 0],
                 ['Canais', (storeFallback('channels') || []).length || 0],
                 ['Esportes', (storeFallback('sports') || []).length || 0],
                 ['Configuracoes', (storeFallback('settings') || []).length || 0],
               ];
 
-              kpiRoot.innerHTML = kpis.map((item) =>
-                '<button type="button" class="admin-card admin-kpi-button" data-jump="' + sectionIdFromLabel(item[0]) + '">' +
-                  '<div class="admin-kpi-label">' + item[0] + '</div>' +
-                  '<div class="admin-kpi-value">' + item[1] + '</div>' +
-                  '<div class="admin-kpi-sub">Gerir agora</div>' +
-                '</button>'
-              ).join('');
+              if (kpiRoot) {
+                kpiRoot.innerHTML = kpis.map(renderKpiCard).join('');
 
-              document.querySelectorAll('[data-jump]').forEach((button) => button.addEventListener('click', () => activateSection(button.dataset.jump)));
+                document.querySelectorAll('[data-jump]').forEach((button) =>
+                  button.addEventListener('click', () => activateSection(button.dataset.jump))
+                );
+              }
             } else {
-              // fallback local
+              // fallback local + mensagem de erro
+              window.showToast?.('Falha ao carregar stats da API. A usar dados locais.', 'error');
               renderOverviewLocal();
             }
+
+            // Se o store local estiver vazio, mostramos uma mensagem amigável.
+            try {
+              const store = getStore();
+              const overviewEmpty =
+                !store?.users?.length && !store?.events?.length && !store?.campaigns?.length;
+              if (kpiRoot && overviewEmpty) {
+                kpiRoot.innerHTML = '<div style="color:rgba(255,255,255,0.55);font-size:13px">Sem dados para mostrar.</div>';
+              }
+            } catch (_) {}
+
             renderAudit();
+
           }
+
 
           function storeFallback(section) {
             try {
@@ -435,13 +533,7 @@ export function AdminDashboard() {
               ['Configuracoes', store.settings.length],
             ];
 
-            document.getElementById('admin-kpis').innerHTML = kpis.map((item) =>
-              '<button type="button" class="admin-card admin-kpi-button" data-jump="' + sectionIdFromLabel(item[0]) + '">' +
-                '<div class="admin-kpi-label">' + item[0] + '</div>' +
-                '<div class="admin-kpi-value">' + item[1] + '</div>' +
-                '<div class="admin-kpi-sub">Gerir agora</div>' +
-              '</button>'
-            ).join('');
+            document.getElementById('admin-kpis').innerHTML = kpis.map(renderKpiCard).join('');
 
             document.querySelectorAll('[data-jump]').forEach((button) => button.addEventListener('click', () => activateSection(button.dataset.jump)));
           }
@@ -483,8 +575,19 @@ export function AdminDashboard() {
               tableBody.innerHTML = '<tr><td colspan="' + (visibleFields.length + 1) + '" style="color:rgba(255,255,255,0.55)">Carregando campanhas...</td></tr>';
               countEl.textContent = '';
 
-              const res = await apiFetchJSON('/api/admin/campaigns');
-              const rows = (res?.ok && res?.data?.data) ? res.data.data : [];
+              let res;
+              try {
+                res = await apiFetchJSON('/api/admin/campaigns');
+              } catch (e) {
+                res = null;
+              }
+
+              if (!res?.ok || !res?.data?.data) {
+                window.showToast?.('Falha ao carregar campanhas da API. A usar dados locais.', 'error');
+              }
+
+              const rows = (res?.ok && res?.data?.data) ? res.data.data : (storeFallback(currentSection) || []);
+
 
               const filtered = rows.filter((row) => {
                 const textMatch = !query || Object.values(row).join(' ').toLowerCase().includes(query);
@@ -492,20 +595,17 @@ export function AdminDashboard() {
                 return textMatch && statusMatch;
               });
 
-              tableBody.innerHTML = filtered.map((row) =>
+              renderSectionSummary(rows, filtered, statusKey);
+              tableBody.innerHTML = filtered.length ? filtered.map((row) =>
                 '<tr>' +
                   visibleFields.map((field) => '<td>' + formatCell(row[field.key], field, row) + '</td>').join('') +
-                  '<td><div class="admin-row-actions">' +
-                    '<button class="admin-row-action" data-view="' + row.id + '">Ver</button>' +
-                    // CRUD update/delete ainda nao implementado no backend -> manter apenas visual
-                    '<button class="admin-row-action" data-edit="' + row.id + '" disabled style="opacity:0.5;cursor:not-allowed">Editar</button>' +
-                    '<button class="admin-row-action admin-row-danger" data-delete="' + row.id + '" disabled style="opacity:0.5;cursor:not-allowed">Apagar</button>' +
-                  '</div></td>' +
+                  '<td>' + renderRowActions(row.id, true) + '</td>' +
                 '</tr>'
-              ).join('');
+              ).join('') : renderEmptyRow(visibleFields.length + 1);
 
               countEl.textContent = filtered.length + ' de ' + rows.length + ' registos';
               renderStatusFilter(rows, statusKey);
+              renderTableFooter(filtered.length, rows.length);
               wireRowActions();
               return;
             }
@@ -526,20 +626,64 @@ export function AdminDashboard() {
             });
 
             document.getElementById('admin-table-head').innerHTML = '<tr>' + visibleFields.map((field) => '<th>' + field.label + '</th>').join('') + '<th>Acoes</th></tr>';
-            document.getElementById('admin-table-body').innerHTML = filtered.map((row) =>
+            renderSectionSummary(rows, filtered, statusKey);
+            document.getElementById('admin-table-body').innerHTML = filtered.length ? filtered.map((row) =>
               '<tr>' +
                 visibleFields.map((field) => '<td>' + formatCell(row[field.key], field, row) + '</td>').join('') +
-                '<td><div class="admin-row-actions">' +
-                  '<button class="admin-row-action" data-view="' + row.id + '">Ver</button>' +
-                  '<button class="admin-row-action" data-edit="' + row.id + '">Editar</button>' +
-                  '<button class="admin-row-action admin-row-danger" data-delete="' + row.id + '">Apagar</button>' +
-                '</div></td>' +
+                '<td>' + renderRowActions(row.id, false) + '</td>' +
               '</tr>'
-            ).join('');
+            ).join('') : renderEmptyRow(visibleFields.length + 1);
 
             document.getElementById('admin-count').textContent = filtered.length + ' de ' + rows.length + ' registos';
             renderStatusFilter(rows, statusKey);
+            renderTableFooter(filtered.length, rows.length);
             wireRowActions();
+          }
+
+          function renderSectionSummary(rows, filtered, statusKey) {
+            const root = document.getElementById('admin-section-summary');
+            if (!root) return;
+            const activeValues = ['live', 'active', 'published', 'verified'];
+            const pendingValues = ['upcoming', 'pending', 'review', 'scheduled', 'draft'];
+            const active = statusKey ? rows.filter((row) => activeValues.includes(row[statusKey])).length : rows.length;
+            const pending = statusKey ? rows.filter((row) => pendingValues.includes(row[statusKey])).length : 0;
+            root.innerHTML =
+              '<div class="admin-summary-card">' +
+                '<i class="ph ' + (ADMIN_ICONS[currentSection] || 'ph-stack') + '"></i>' +
+                '<div><strong>' + formatNumber(rows.length) + '</strong><span>Total em ' + ADMIN_LABELS[currentSection].toLowerCase() + '</span></div>' +
+              '</div>' +
+              '<div class="admin-summary-card">' +
+                '<i class="ph ph-pulse"></i>' +
+                '<div><strong>' + formatNumber(active) + '</strong><span>Ativos agora</span></div>' +
+              '</div>' +
+              '<div class="admin-summary-card">' +
+                '<i class="ph ph-funnel"></i>' +
+                '<div><strong>' + formatNumber(filtered.length) + '</strong><span>Resultados filtrados</span></div>' +
+              '</div>' +
+              '<div class="admin-summary-card">' +
+                '<i class="ph ph-clock-countdown"></i>' +
+                '<div><strong>' + formatNumber(pending) + '</strong><span>Pendentes</span></div>' +
+              '</div>';
+          }
+
+          function renderTableFooter(filteredCount, totalCount) {
+            const root = document.getElementById('admin-table-footer');
+            if (!root) return;
+            root.innerHTML =
+              '<span>Mostrando ' + formatNumber(filteredCount) + ' de ' + formatNumber(totalCount) + ' registos</span>' +
+              '<div class="admin-pagination">' +
+                '<button type="button" disabled><i class="ph ph-caret-left"></i></button>' +
+                '<button type="button" class="is-active">1</button>' +
+                '<button type="button" disabled><i class="ph ph-caret-right"></i></button>' +
+              '</div>';
+          }
+
+          function renderEmptyRow(colspan) {
+            return '<tr><td colspan="' + colspan + '"><div class="admin-empty-state">' +
+              '<i class="ph ph-magnifying-glass"></i>' +
+              '<strong>Nenhum registo encontrado</strong>' +
+              '<span>Ajuste a pesquisa ou remova o filtro de status.</span>' +
+            '</div></td></tr>';
           }
 
           function getVisibleFields(schema) {
@@ -568,6 +712,95 @@ export function AdminDashboard() {
             return row.videoUrl || row.streamUrl || '';
           }
 
+          function renderRowActions(id, readonly = false) {
+            const disabled = readonly ? ' disabled style="opacity:0.52;cursor:not-allowed"' : '';
+            return '<div class="admin-row-actions">' +
+              '<button class="admin-row-action" data-view="' + id + '"><i class="ph ph-eye"></i>Ver</button>' +
+              '<button class="admin-row-action" data-edit="' + id + '"' + disabled + '><i class="ph ph-pencil-simple"></i>Editar</button>' +
+              '<button class="admin-row-action admin-row-danger" data-delete="' + id + '"' + disabled + '><i class="ph ph-trash"></i></button>' +
+            '</div>';
+          }
+
+          function renderSparkline(value, status) {
+            const isLive = status === 'live' || status === 'active';
+            return '<span class="admin-sparkline ' + (isLive ? 'is-live' : 'is-calm') + '"></span>';
+          }
+
+          function statusLabel(value) {
+            const labels = {
+              live: 'AO VIVO',
+              upcoming: 'UPCOMING',
+              ended: 'ENCERRADO',
+              active: 'ATIVO',
+              paused: 'PAUSADO',
+              scheduled: 'AGENDADO',
+              published: 'PUBLICADO',
+              draft: 'RASCUNHO',
+              blocked: 'BLOQUEADO',
+              pending: 'PENDENTE',
+              verified: 'VERIFICADO',
+              review: 'REVISAO',
+              hidden: 'OCULTO',
+            };
+            return labels[value] || String(value).toUpperCase();
+          }
+
+          function detailLabel(key) {
+            const labels = {
+              id: 'ID',
+              title: 'Titulo',
+              name: 'Nome',
+              thumbnail: 'Thumbnail',
+              avatar: 'Avatar',
+              imageUrl: 'Imagem',
+              streamUrl: 'Stream URL',
+              videoUrl: 'Video URL',
+              description: 'Descricao',
+              sport: 'Esporte',
+              channel: 'Canal',
+              owner: 'Dono',
+              status: 'Status',
+              viewers: 'Viewers',
+              views: 'Views',
+              followers: 'Seguidores',
+              premium: 'Premium',
+              role: 'Perfil',
+              plan: 'Plano',
+              email: 'Email',
+              advertiser: 'Anunciante',
+              budget: 'Budget',
+              spent: 'Gasto',
+              ctr: 'CTR',
+              type: 'Tipo',
+              clickUrl: 'URL destino',
+              duration: 'Duracao',
+              slug: 'Slug',
+              color: 'Cor',
+              liveCount: 'Ao vivo',
+              totalEvents: 'Eventos',
+              value: 'Valor',
+              category: 'Categoria',
+            };
+            return labels[key] || key;
+          }
+
+          function formatDetailValue(key, value) {
+            if (value === undefined || value === null || value === '') return '-';
+            if (['viewers', 'views', 'followers', 'budget', 'spent', 'liveCount', 'totalEvents'].includes(key)) return formatNumber(value);
+            if (key === 'status') return '<span class="admin-status-pill admin-status-' + String(value).toLowerCase() + '"><i></i>' + statusLabel(value) + '</span>';
+            if (key === 'color') return '<span class="admin-color-cell"><span style="background:' + escapeAttr(value) + '"></span>' + escapeHtml(value) + '</span>';
+            return escapeHtml(String(value));
+          }
+
+          function renderDetailCard(key, value) {
+            const isUrl = /(url|thumbnail|avatar|image|stream)/i.test(key) && value;
+            return '<div class="admin-view-detail-card">' +
+              '<dt>' + detailLabel(key) + '</dt>' +
+              '<dd>' + formatDetailValue(key, value) + '</dd>' +
+              (isUrl ? '<button type="button" class="admin-copy-detail" data-copy="' + escapeAttr(String(value)) + '" aria-label="Copiar"><i class="ph ph-copy"></i></button>' : '') +
+            '</div>';
+          }
+
           function formatCell(value, field, row) {
             if (value === undefined || value === null || value === '') return '-';
             if (['title', 'name', 'advertiser'].includes(field.key)) {
@@ -579,8 +812,12 @@ export function AdminDashboard() {
               '</div>';
             }
             if (field.type === 'color') return '<span class="admin-color-cell"><span style="background:' + value + '"></span>' + value + '</span>';
-            if (field.key === 'status') return '<span class="admin-status-pill">' + value + '</span>';
+            if (field.key === 'status') return '<span class="admin-status-pill admin-status-' + String(value).toLowerCase() + '"><i></i>' + statusLabel(value) + '</span>';
             if (field.type === 'url') return '<a class="admin-url-cell" href="' + value + '" target="_blank" rel="noreferrer">Abrir</a>';
+            if (['viewers', 'views', 'followers', 'budget', 'spent', 'liveCount', 'totalEvents'].includes(field.key)) {
+              return '<span class="admin-number-cell">' + formatNumber(value) + '</span>' + (field.key === 'viewers' ? renderSparkline(value, row.status) : '');
+            }
+            if (['sport', 'channel', 'owner', 'role', 'plan', 'type'].includes(field.key)) return '<span class="admin-meta-cell">' + String(value) + '</span>';
             return String(value);
           }
 
@@ -613,24 +850,36 @@ export function AdminDashboard() {
 
           function openView(id) {
             const item = getStore()[currentSection].find((row) => row.id === id);
+            if (!item) {
+              window.showToast?.('Registo nao encontrado.', 'error');
+              return;
+            }
             const media = getMediaUrl(item);
             const playableUrl = getPlayableUrl(item);
             document.getElementById('admin-modal-title').textContent = 'Visualizar ' + ADMIN_LABELS[currentSection];
             document.getElementById('admin-modal-subtitle').textContent = getItemLabel(item);
             document.getElementById('admin-modal-body').innerHTML =
-              '<div class="admin-preview-layout">' +
-                '<div class="admin-preview-media">' +
-                  (media ? '<img src="' + media + '" alt="' + getItemLabel(item) + '" />' : '<div class="admin-preview-empty">Sem imagem</div>') +
-                  (playableUrl ? '<video id="admin-view-video" controls preload="metadata"></video>' : '') +
-                '</div>' +
-                '<dl class="admin-detail-list">' + Object.entries(item).map(([key, value]) =>
-              '<div><dt>' + key + '</dt><dd>' + value + '</dd></div>'
-                ).join('') + '</dl>' +
+              '<div class="admin-view-layout">' +
+                '<section class="admin-view-media">' +
+                  (media ? '<img src="' + escapeAttr(media) + '" alt="' + escapeAttr(getItemLabel(item)) + '" />' : '<div class="admin-preview-empty"><i class="ph ph-image"></i><span>Sem imagem</span></div>') +
+                  '<div class="admin-view-preview">' +
+                    (playableUrl ? '<video id="admin-view-video" controls preload="metadata"></video>' : '<div class="admin-preview-empty"><strong>Preview</strong><span>Not Available</span></div>') +
+                  '</div>' +
+                '</section>' +
+                '<section class="admin-view-details">' +
+                  Object.entries(item).map(([key, value]) => renderDetailCard(key, value)).join('') +
+                '</section>' +
               '</div>';
             document.getElementById('admin-modal-actions').innerHTML =
-              '<button class="admin-action" id="admin-modal-edit">Editar</button><button class="admin-action" id="admin-modal-dismiss">Fechar</button>';
+              '<button class="admin-action admin-view-edit" id="admin-modal-edit"><i class="ph ph-pencil-simple"></i>Editar</button><button class="admin-action" id="admin-modal-dismiss"><i class="ph ph-x"></i>Fechar</button>';
             document.getElementById('admin-modal-edit').addEventListener('click', () => openForm('edit', id));
             document.getElementById('admin-modal-dismiss').addEventListener('click', closeModal);
+            document.querySelectorAll('[data-copy]').forEach((button) => {
+              button.addEventListener('click', () => {
+                navigator.clipboard?.writeText(button.dataset.copy || '');
+                window.showToast?.('Valor copiado.', 'success');
+              });
+            });
             showModal();
             attachAdminVideo('admin-view-video', playableUrl);
           }
@@ -639,42 +888,68 @@ export function AdminDashboard() {
             const store = getStore();
             const schema = ADMIN_SCHEMAS[currentSection];
             const item = mode === 'edit' ? store[currentSection].find((row) => row.id === id) : {};
-            const media = getMediaUrl(item);
-            const playableUrl = getPlayableUrl(item);
+            const isEditMode = mode === 'edit';
+            const singularLabel = ADMIN_SINGULAR[currentSection] || 'registo';
+            const modalLabel = singularLabel.charAt(0).toUpperCase() + singularLabel.slice(1);
+            const itemLabel = getItemLabel(item) || 'Novo conteudo';
+            const titleIcon = isEditMode ? 'ph-pencil-simple' : 'ph-plus-circle';
             editingId = id || null;
 
-            document.getElementById('admin-modal-title').textContent = mode === 'edit' ? 'Editar ' + ADMIN_LABELS[currentSection] : 'Criar ' + ADMIN_LABELS[currentSection];
-            document.getElementById('admin-modal-subtitle').textContent = mode === 'edit' ? getItemLabel(item) : 'Novo registo';
+            document.getElementById('admin-modal-title').innerHTML =
+              '<span class="admin-modal-title-icon"><i class="ph ' + titleIcon + '"></i></span>' +
+              (isEditMode ? 'Editar ' : 'Criar ') + modalLabel;
+            document.getElementById('admin-modal-subtitle').textContent = isEditMode
+              ? 'Faca as alteracoes necessarias para "' + itemLabel + '".'
+              : 'Preencha os dados para criar um novo ' + singularLabel + '.';
             document.getElementById('admin-modal-body').innerHTML =
-              '<form id="admin-crud-form" class="admin-edit-layout">' +
-                '<aside class="admin-edit-preview">' +
-                  '<div class="admin-edit-preview-frame">' +
-                    (media ? '<img id="admin-live-preview" src="' + escapeAttr(media) + '" alt="" />' : '<div id="admin-live-preview-empty" class="admin-preview-empty">Sem imagem</div>') +
-                  '</div>' +
-                  '<video id="admin-live-video" controls preload="metadata" style="' + (playableUrl ? '' : 'display:none') + '"></video>' +
-                  '<div class="admin-edit-preview-meta"><strong>' + escapeHtml(getItemLabel(item) || 'Novo conteudo') + '</strong><span>' + escapeHtml(currentSection) + '</span></div>' +
-                '</aside>' +
-                '<div class="admin-crud-form">' + schema.map((field) => renderField(field, item[field.key])).join('') + '</div>' +
+              '<form id="admin-crud-form" class="admin-crud-form admin-crud-form-refined admin-crud-form-compact">' +
+                schema.map((field) => renderField(field, item[field.key])).join('') +
               '</form>';
             document.getElementById('admin-modal-actions').innerHTML =
-              '<button type="button" class="admin-action" id="admin-modal-cancel">Cancelar</button><button type="button" class="admin-action admin-action-primary" id="admin-modal-save">Guardar</button>';
+              '<button type="button" class="admin-action" id="admin-modal-cancel"><i class="ph ph-x"></i>Cancelar</button>' +
+              '<button type="button" class="admin-action admin-action-primary" id="admin-modal-save"><i class="ph ph-floppy-disk"></i>' + (isEditMode ? 'Salvar Alteracoes' : 'Criar Registo') + '</button>';
             document.getElementById('admin-modal-cancel').addEventListener('click', closeModal);
             document.getElementById('admin-modal-save').addEventListener('click', saveForm);
             wireMediaPreview();
             showModal();
-            attachAdminVideo('admin-live-video', playableUrl);
           }
 
           function renderField(field, value) {
             const required = field.required ? 'required' : '';
             const safeValue = value ?? '';
-            const wideClass = ['thumbnail', 'avatar', 'imageUrl', 'videoUrl', 'streamUrl', 'clickUrl'].includes(field.key) ? ' class="admin-form-wide"' : '';
+            const isWideField = ['title', 'name', 'thumbnail', 'avatar', 'imageUrl', 'videoUrl', 'streamUrl', 'clickUrl'].includes(field.key);
+            const fieldClass = ' class="admin-field-card' + (isWideField ? ' admin-form-wide' : '') + '"';
+            const isImageField = ['thumbnail', 'avatar', 'imageUrl', 'cover', 'capa'].includes(field.key);
+            if (isImageField) {
+              return (
+                '<label' + fieldClass + '>' +
+                '<span>' + field.label + '</span>' +
+                '<input type="hidden" name="' + field.key + '" value="' + escapeAttr(String(safeValue)) + '" ' + (field.required ? 'required' : '') + ' />' +
+                '<div class="admin-filezone" data-filezone-for="' + field.key + '">' +
+                  '<div class="admin-filezone-previewrow">' +
+                    '<div class="admin-filezone-thumb" data-thumb-for="' + field.key + '">' +
+                      (safeValue ? '<img src="' + escapeAttr(String(safeValue)) + '" alt="" />' : '<div class="admin-preview-empty"><i class="ph ph-image-square"></i></div>') +
+                    '</div>' +
+                    '<div class="admin-filezone-main">' +
+                      '<input type="url" class="admin-filezone-url" data-url-input="' + field.key + '" placeholder="Cole a URL da imagem" value="' + escapeAttr(String(safeValue)) + '" />' +
+                      '<div class="admin-filezone-cta">' +
+                        '<button type="button" class="admin-filezone-pick"><i class="ph ph-upload-simple"></i>Mudar imagem</button>' +
+                        '<span class="admin-filezone-hint">JPG, PNG ou WEBP</span>' +
+                      '</div>' +
+                      '<div class="admin-filezone-status" data-status-for="' + field.key + '"></div>' +
+                    '</div>' +
+                  '</div>' +
+                  '<input class="admin-filezone-input" type="file" accept="image/jpeg,image/png,image/webp" style="display:none" />' +
+                '</div>' +
+                '</label>'
+              );
+            }
             if (field.type === 'textarea') {
-              return '<label class="admin-form-wide"><span>' + field.label + '</span><textarea name="' + field.key + '" ' + required + '>' + escapeHtml(String(safeValue)) + '</textarea></label>';
+              return '<label class="admin-field-card admin-form-wide"><span>' + field.label + '</span><textarea name="' + field.key + '" ' + required + '>' + escapeHtml(String(safeValue)) + '</textarea></label>';
             }
             if (field.type === 'select') {
               const value = safeValue || field.options[0] || '';
-              return '<label><span>' + field.label + '</span><input type="hidden" name="' + field.key + '" value="' + escapeAttr(value) + '" ' + required + ' />' +
+              return '<label class="admin-field-card"><span>' + field.label + '</span><input type="hidden" name="' + field.key + '" value="' + escapeAttr(value) + '" ' + required + ' />' +
                 '<div class="admin-custom-select" data-select-name="' + field.key + '">' +
                   '<button type="button" class="admin-custom-select-trigger"><span>' + escapeHtml(value) + '</span><b></b></button>' +
                   '<div class="admin-custom-select-menu">' +
@@ -682,24 +957,14 @@ export function AdminDashboard() {
                   '</div>' +
                 '</div></label>';
             }
-            return '<label' + wideClass + '><span>' + field.label + '</span><input name="' + field.key + '" type="' + field.type + '" value="' + escapeAttr(String(safeValue)) + '" ' + required + ' /></label>';
+            return '<label' + fieldClass + '><span>' + field.label + '</span><input name="' + field.key + '" type="' + field.type + '" value="' + escapeAttr(String(safeValue)) + '" ' + required + ' /></label>';
           }
 
           function wireMediaPreview() {
             const form = document.getElementById('admin-crud-form');
-            const imageInput = form?.elements.thumbnail || form?.elements.avatar || form?.elements.imageUrl;
             const videoInput = form?.elements.videoUrl || form?.elements.streamUrl;
 
-            imageInput?.addEventListener('input', () => {
-              updateImagePreview(imageInput.value);
-            });
-
-            videoInput?.addEventListener('input', () => {
-              const video = document.getElementById('admin-live-video');
-              if (!video) return;
-              attachAdminVideo(video, videoInput.value || '');
-            });
-
+            // Wire custom selects
             document.querySelectorAll('.admin-custom-select').forEach((select) => {
               const trigger = select.querySelector('.admin-custom-select-trigger');
               const hidden = form.elements[select.dataset.selectName];
@@ -719,6 +984,20 @@ export function AdminDashboard() {
                 });
               });
             });
+
+            // Wire image upload zones (file + URL fallback)
+            document.querySelectorAll('.admin-filezone').forEach((zone) => {
+              const fieldKey = zone.dataset.filezoneFor;
+              if (!fieldKey) return;
+              wireImageUploadZone(zone, fieldKey);
+            });
+
+            // Video preview from URL
+            videoInput?.addEventListener('input', () => {
+              const video = document.getElementById('admin-live-video');
+              if (!video) return;
+              attachAdminVideo(video, videoInput.value || '');
+            });
           }
 
           function updateImagePreview(url) {
@@ -728,6 +1007,137 @@ export function AdminDashboard() {
               ? '<img id="admin-live-preview" src="' + escapeAttr(url) + '" alt="" />'
               : '<div id="admin-live-preview-empty" class="admin-preview-empty">Sem imagem</div>';
           }
+
+          function setZoneStatus(zone, statusText, statusType = '') {
+            const statusEl = zone.querySelector('[data-status-for]');
+            if (!statusEl) return;
+            statusEl.textContent = statusText || '';
+            statusEl.className = 'admin-filezone-status ' + (statusType ? 'is-' + statusType : '');
+          }
+
+          function wireImageUploadZone(zone, fieldKey) {
+            const inputFile = zone.querySelector('.admin-filezone-input');
+            const pickBtn = zone.querySelector('.admin-filezone-pick');
+            const urlInput = zone.querySelector('.admin-filezone-url');
+            const hidden = document.getElementById('admin-crud-form')?.elements?.[fieldKey];
+            const thumbWrap = zone.querySelector('[data-thumb-for]');
+
+            const updateThumb = (url) => {
+              if (!thumbWrap) return;
+              thumbWrap.innerHTML = url
+                ? '<img src="' + escapeAttr(String(url)) + '" alt="" />'
+                : '<div class="admin-preview-empty">Sem imagem</div>';
+            };
+
+            const currentValue = hidden?.value || urlInput?.value || '';
+            updateThumb(currentValue ? currentValue : '');
+
+            // URL fallback
+            urlInput?.addEventListener('input', () => {
+              if (hidden) hidden.value = urlInput.value || '';
+              updateThumb(urlInput.value || '');
+              if (urlInput.value) setZoneStatus(zone, 'URL definida.', 'success');
+            });
+
+            pickBtn?.addEventListener('click', () => inputFile?.click());
+
+            zone.addEventListener('dragover', (e) => {
+              e.preventDefault();
+              zone.classList.add('is-dragover');
+            });
+            zone.addEventListener('dragleave', () => zone.classList.remove('is-dragover'));
+            zone.addEventListener('drop', (e) => {
+              e.preventDefault();
+              zone.classList.remove('is-dragover');
+              const files = e.dataTransfer?.files;
+              if (files && files.length) handleImageFiles(files, zone, fieldKey);
+            });
+
+            inputFile?.addEventListener('change', () => {
+              const files = inputFile.files;
+              if (files && files.length) handleImageFiles(files, zone, fieldKey);
+            });
+
+            async function handleImageFiles(files, zoneEl, key) {
+              const file = files[0];
+              if (!file) return;
+
+              const statusBase = document.querySelector('.admin-filezone-status');
+              setZoneStatus(zoneEl, 'A preparar imagem...', '');
+              zoneEl.classList.add('is-uploading');
+
+              try {
+                validateImageFile(file);
+                const webpBlob = await optimizeImageToWebp(file);
+
+                setZoneStatus(zoneEl, 'A enviar...', '');
+                const formData = new FormData();
+                formData.append('image', webpBlob, file.name.replace(/\.[^.]+$/, '') + '.webp');
+                formData.append('field', key);
+
+                // Persistently store image and get URL
+                const res = await fetch('/api/admin/upload-image', { method: 'POST', body: formData });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok || !json?.success || !json?.url) {
+                  throw new Error(json?.error || 'Upload falhou');
+                }
+
+                const url = json.url;
+                if (hidden) hidden.value = url;
+                updateThumb(url);
+                setZoneStatus(zoneEl, 'Upload concluido.', 'success');
+
+                // Update modal big preview if this field is the main preview
+                if (['thumbnail', 'avatar', 'imageUrl', 'cover', 'capa'].includes(key)) {
+                  updateImagePreview(url);
+                }
+              } catch (err) {
+                console.error(err);
+                setZoneStatus(zoneEl, String(err?.message || err || 'Erro ao processar imagem'), 'error');
+              } finally {
+                zoneEl.classList.remove('is-uploading');
+              }
+            }
+          }
+
+          function validateImageFile(file) {
+            const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!allowed.includes(file.type)) {
+              throw new Error('Formato invalido. Use JPG, PNG ou WEBP.');
+            }
+            const maxBytes = 8 * 1024 * 1024; // 8MB
+            if (file.size > maxBytes) {
+              throw new Error('Imagem demasiado grande. Max 8MB.');
+            }
+          }
+
+          async function optimizeImageToWebp(file) {
+            // Resize large images for better performance
+            const imgBitmap = await createImageBitmap(file);
+            const maxW = 1400;
+            const maxH = 900;
+
+            const scale = Math.min(1, maxW / imgBitmap.width, maxH / imgBitmap.height);
+            const targetW = Math.max(1, Math.round(imgBitmap.width * scale));
+            const targetH = Math.max(1, Math.round(imgBitmap.height * scale));
+
+            const canvas = document.createElement('canvas');
+            canvas.width = targetW;
+            canvas.height = targetH;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(imgBitmap, 0, 0, targetW, targetH);
+
+            // WEBP quality 0.78 is a good compromise
+            const blob = await new Promise((resolve, reject) => {
+              canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Falha ao gerar WEBP'))), 'image/webp', 0.78);
+            });
+
+            // Basic sanity check
+            if (!blob || !blob.size) throw new Error('Falha ao otimizar imagem.');
+            return blob;
+          }
+
 
           function attachAdminVideo(target, url) {
             const video = typeof target === 'string' ? document.getElementById(target) : target;
@@ -930,6 +1340,9 @@ export function AdminDashboard() {
           document.addEventListener('click', (event) => {
             if (event.target.closest('.admin-custom-select')) return;
             document.querySelectorAll('.admin-custom-select').forEach((select) => select.classList.remove('is-open'));
+          });
+          document.getElementById('admin-report').addEventListener('click', () => {
+            window.showToast?.('Relatorio preparado com os dados atuais do painel.', 'success');
           });
           document.getElementById('admin-export').addEventListener('click', () => {
             navigator.clipboard?.writeText(JSON.stringify(getStore(), null, 2));

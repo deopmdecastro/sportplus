@@ -11,7 +11,7 @@ export function ExplorePage() {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Explorar | SPORT+</title>
+        <title>Explorar | sportplus</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
         <link href="/static/style.css" rel="stylesheet" />
         <script src="/static/notifications.js" defer></script>
@@ -105,7 +105,7 @@ export function ExplorePage() {
               <div style="font-size:48px">🏆</div>
               <div style="flex:1">
                 <div style="color:rgba(255,255,255,0.3);font-size:11px;font-weight:600;letter-spacing:1px;margin-bottom:6px">PUBLICIDADE</div>
-                <div style="color:white;font-size:20px;font-weight:800;margin-bottom:6px">SPORT+ PRO — Sem Anúncios + 4K Ultra HD</div>
+                <div style="color:white;font-size:20px;font-weight:800;margin-bottom:6px">sportplus PRO — Sem Anúncios + 4K Ultra HD</div>
                 <div style="color:rgba(255,255,255,0.5);font-size:14px">Experimente 7 dias grátis. Cancele quando quiser.</div>
               </div>
               <a href="/cadastro" style="padding:12px 28px;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;text-decoration:none;border-radius:8px;font-weight:700;white-space:nowrap">Começar Grátis</a>

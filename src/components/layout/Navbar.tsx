@@ -5,15 +5,15 @@ interface NavbarProps {
 
 export function Navbar({ currentPage = 'home' }: NavbarProps) {
   return (
-    <nav style="position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(180deg,rgba(0,0,0,0.98) 0%,rgba(0,0,0,0.85) 100%);backdrop-filter:blur(12px);border-bottom:1px solid rgba(239,68,68,0.2)">
-      <div style="max-width:1400px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px">
+    <nav class="stream-nav" style="position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(180deg,rgba(0,0,0,0.98) 0%,rgba(0,0,0,0.85) 100%);backdrop-filter:blur(12px);border-bottom:1px solid rgba(239,68,68,0.2)">
+      <div class="stream-nav-inner" style="max-width:1400px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px">
         {/* Logo */}
-        <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none">
-          <div style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:8px">
+        <a href="/" class="stream-brand-link" style="display:flex;align-items:center;gap:8px;text-decoration:none">
+          <div class="stream-brand-mark" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:8px">
             <span style="color:white;font-weight:900;font-size:18px">S</span>
           </div>
-          <span style="color:white;font-weight:900;font-size:22px;letter-spacing:-0.5px">
-            SPORT<span style="color:#ef4444">+</span>
+          <span class="stream-brand-name" style="color:white;font-weight:900;font-size:22px;letter-spacing:-0.5px">
+            sportplus
           </span>
         </a>
 
@@ -32,7 +32,7 @@ export function Navbar({ currentPage = 'home' }: NavbarProps) {
         </div>
 
         {/* Search */}
-        <div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:24px;padding:8px 16px" class="search-bar">
+        <div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:24px;padding:8px 16px" class="search-bar stream-search-bar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>

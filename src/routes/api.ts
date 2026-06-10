@@ -321,7 +321,7 @@ apiRouter.get('/search', (c) => {
 apiRouter.get('/health', (c) => {
   return c.json({
     status: 'ok',
-    service: 'SPORT+ API',
+    service: 'sportplus API',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     environment: 'cloudflare-edge'

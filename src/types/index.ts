@@ -1,5 +1,5 @@
 // ===========================
-// SPORT+ TYPE DEFINITIONS
+// sportplus TYPE DEFINITIONS
 // ===========================
 
 export interface User {

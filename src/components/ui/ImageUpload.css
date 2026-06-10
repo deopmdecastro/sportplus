@@ -1,0 +1,38 @@
+:root{
+  --sp-accent:#ef4444;
+}
+.admin-filezone{
+  position:relative;
+  border:1px dashed rgba(255,255,255,0.18);
+  border-radius:12px;
+  padding:14px;
+  background:rgba(255,255,255,0.03);
+  transition:all .18s ease;
+}
+.admin-filezone.is-dragover{
+  border-color:rgba(239,68,68,0.65);
+  box-shadow:0 0 0 4px rgba(239,68,68,0.12);
+  background:rgba(239,68,68,0.06);
+}
+.admin-filezone.is-uploading{
+  opacity:0.9;
+}
+.admin-filezone-inner{display:flex;flex-direction:column;gap:6px;align-items:flex-start;}
+.admin-filezone-icon{width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,0.14);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;margin-bottom:2px;}
+.admin-filezone-title{color:#fff;font-weight:800;letter-spacing:-0.02em;}
+.admin-filezone-sub{color:rgba(255,255,255,0.55);font-size:12px;font-weight:600;}
+.admin-filezone-cta{margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.admin-filezone-pick{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:800;transition:transform .12s ease, background .12s ease;}
+.admin-filezone-pick:hover{transform:translateY(-1px);background:rgba(255,255,255,0.09);}
+.admin-filezone-hint{color:rgba(255,255,255,0.45);font-size:12px;font-weight:700;}
+.admin-filezone-urlwrap{margin-top:10px;}
+.admin-filezone-url{width:100%;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:10px 12px;color:#fff;outline:none;}
+.admin-filezone-url:focus{border-color:rgba(239,68,68,0.55);box-shadow:0 0 0 4px rgba(239,68,68,0.12);}
+.admin-filezone-previewrow{margin-top:12px;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+.admin-filezone-thumb{width:120px;height:80px;border-radius:12px;border:1px solid rgba(255,255,255,0.10);background:rgba(255,255,255,0.03);overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.admin-filezone-thumb img{width:100%;height:100%;object-fit:cover;}
+.admin-preview-empty{color:rgba(255,255,255,0.45);font-size:12px;font-weight:800;}
+.admin-filezone-status{min-height:18px;color:rgba(255,255,255,0.55);font-size:12px;font-weight:800;}
+.admin-filezone-status.is-success{color:rgba(34,197,94,0.95);}
+.admin-filezone-status.is-error{color:rgba(239,68,68,0.95);}
+

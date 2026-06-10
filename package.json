@@ -1,5 +1,5 @@
 {
-  "name": "webapp",
+  "name": "sportplus",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -8,6 +8,8 @@
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f api",
+    "check:backend": "node --check backend/src/index.js && node --check backend/src/db.js && node --check backend/src/http.js",
+    "check": "npm run build && npm run check:backend",
     "preview": "wrangler pages dev",
     "deploy": "npm run build && wrangler pages deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"

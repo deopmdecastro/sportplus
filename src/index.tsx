@@ -18,6 +18,8 @@ import { CreatorDashboard } from './pages/creator/CreatorDashboard'
 import { AdminDashboard } from './pages/admin/AdminDashboard'
 
 const app = new Hono()
+const siteUrl = 'https://sportplus.example'
+const publicRoutes = ['/', '/explorar', '/ao-vivo', '/highlights', '/login', '/cadastro', '/criador', '/admin', '/esportes']
 
 // ==============================
 // MIDDLEWARE
@@ -28,6 +30,30 @@ app.use('*', secureHeaders())
 // Static files
 app.use('/static/*', serveStatic({ root: './public' }))
 app.get('/favicon.ico', (c) => c.body(null, 204))
+app.get('/robots.txt', (c) => {
+  return c.text([
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /api/',
+    `Sitemap: ${siteUrl}/sitemap.xml`,
+  ].join('\n'))
+})
+
+app.get('/sitemap.xml', (c) => {
+  const now = new Date().toISOString()
+  const urls = publicRoutes.map((route) => `
+  <url>
+    <loc>${siteUrl}${route === '/' ? '' : route}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>${route === '/' ? 'daily' : 'weekly'}</changefreq>
+    <priority>${route === '/' ? '1.0' : '0.7'}</priority>
+  </url>`).join('')
+
+  c.header('content-type', 'application/xml; charset=utf-8')
+  return c.body(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}
+</urlset>`)
+})
 
 // ==============================
 // API ROUTES
@@ -60,7 +86,7 @@ app.get('/ao-vivo', (c) => {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Ao Vivo | SPORT+</title>
+        <title>Ao Vivo | sportplus</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
         <link href="/static/style.css" rel="stylesheet" />
         <script src="/static/notifications.js" defer></script>
@@ -131,7 +157,7 @@ app.get('/criador/transmissoes', (c) => {
     <html>
       <head>
         <meta charset="UTF-8" />
-        <title>Transmissões | SPORT+ Creator</title>
+        <title>Transmissões | sportplus Creator</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
         <link href="/static/style.css" rel="stylesheet" />
         <script src="/static/notifications.js" defer></script>
@@ -165,7 +191,7 @@ app.get('/esportes', (c) => {
     <html>
       <head>
         <meta charset="UTF-8" />
-        <title>Esportes | SPORT+</title>
+        <title>Esportes | sportplus</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
         <link href="/static/style.css" rel="stylesheet" />
         <script src="/static/notifications.js" defer></script>
@@ -203,7 +229,7 @@ app.notFound((c) => {
     <html>
       <head>
         <meta charset="UTF-8" />
-        <title>404 | SPORT+</title>
+        <title>404 | sportplus</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
         <link href="/static/style.css" rel="stylesheet" />
         <script src="/static/notifications.js" defer></script>

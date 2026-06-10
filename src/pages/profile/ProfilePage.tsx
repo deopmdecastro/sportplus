@@ -7,7 +7,7 @@ export function ProfilePage() {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Perfil | SPORT+</title>
+        <title>Perfil | sportplus</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
         <link href="/static/style.css" rel="stylesheet" />
         <script src="/static/notifications.js" defer></script>

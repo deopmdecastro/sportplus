@@ -1,5 +1,5 @@
 // ===========================
-// SPORT+ UTILITY FUNCTIONS
+// sportplus UTILITY FUNCTIONS
 // ===========================
 
 export function formatNumber(num: number): string {

@@ -1,5 +1,5 @@
 // ===========================
-// SPORT+ MOCK DATA
+// sportplus MOCK DATA
 // ===========================
 
 import type { Sport, Event, Video, Channel, User, Ad, Campaign, ChatMessage } from '../types'

@@ -15,10 +15,10 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{event.title} | SPORT+ AO VIVO</title>
+        <title>{event.title} | sportplus AO VIVO</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
         <link href="/static/style.css" rel="stylesheet" />
-        <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
+
         <script src="/static/notifications.js" defer></script>
       </head>
       <body style="background:#080808">
@@ -43,9 +43,14 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
               <div id="stream-status" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;color:rgba(255,255,255,0.72);font-size:14px;font-weight:700;background:rgba(0,0,0,0.22)">
                 A carregar transmissão...
               </div>
-              <div style="position:absolute;top:14px;right:14px;z-index:80;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.72);border:1px solid rgba(255,255,255,0.14);border-radius:8px;padding:8px 10px">
-                <span style="color:rgba(255,255,255,0.58);font-size:11px;font-weight:800;text-transform:uppercase">Fonte</span>
-                <select id="stream-test-select" style="max-width:320px;background:#151515;border:1px solid rgba(255,255,255,0.16);color:white;border-radius:6px;padding:7px 30px 7px 10px;font-size:12px;font-weight:700;outline:none">
+              <div id="tap-play-feedback" class="tap-play-feedback" aria-hidden="true">▶</div>
+              <div id="stream-server-panel" class="stream-server-panel">
+                <div class="stream-server-head">
+                  <span>Servidores disponiveis</span>
+                  <button id="server-panel-toggle" type="button" aria-expanded="true">Ocultar</button>
+                </div>
+                <div id="stream-server-list" class="stream-server-list" role="listbox" aria-label="Servidores de transmissao"></div>
+                <select id="stream-test-select" aria-label="Selecionar servidor de transmissao" style="display:none">
                   <option value="">Stream do evento</option>
                 </select>
               </div>
@@ -295,19 +300,18 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
           const mainStreamUrl = mainPlayer?.dataset.streamUrl || '';
           const streamStatus = document.getElementById('stream-status');
           const streamTestSelect = document.getElementById('stream-test-select');
+          const streamServerList = document.getElementById('stream-server-list');
+          const streamServerPanel = document.getElementById('stream-server-panel');
+          const serverPanelToggle = document.getElementById('server-panel-toggle');
+          const tapPlayFeedback = document.getElementById('tap-play-feedback');
           const fallbackStreamUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
           const hlsTestStreams = [
+            ['Evento principal', mainStreamUrl],
             ['Tears of Steel', 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8'],
             ['Apple fMP4', 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8'],
             ['Tears MP4 m3u8', 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.mp4/.m3u8'],
             ['Live Akamai', 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8'],
             ['Live Akamai 2', 'https://moctobpltc-i.akamaihd.net/hls/live/571329/eight/playlist.m3u8'],
-            ['Dolby VOD HTTP', 'http://d3rlna7iyyu8wu.cloudfront.net/skip_armstrong/skip_armstrong_stereo_subs.m3u8'],
-            ['Dolby Multichannel HTTP', 'http://d3rlna7iyyu8wu.cloudfront.net/skip_armstrong/skip_armstrong_multichannel_subs.m3u8'],
-            ['Dolby Multilanguage HTTP', 'http://d3rlna7iyyu8wu.cloudfront.net/skip_armstrong/skip_armstrong_multi_language_subs.m3u8'],
-            ['Azure HLSv4 HTTP', 'http://amssamples.streaming.mediaservices.windows.net/91492735-c523-432b-ba01-faba6c2206a2/AzureMediaServicesPromo.ism/manifest(format=m3u8-aapl)'],
-            ['Azure Promo HTTP', 'http://amssamples.streaming.mediaservices.windows.net/69fbaeba-8e92-4740-aedc-ce09ae945073/AzurePromo.ism/manifest(format=m3u8-aapl)'],
-            ['Azure 4K HTTP', 'http://amssamples.streaming.mediaservices.windows.net/634cd01c-6822-4630-8444-8dd6279f94c6/CaminandesLlamaDrama4K.ism/manifest(format=m3u8-aapl)'],
           ];
           let activeStreamUrl = mainStreamUrl;
           let streamLoaded = false;
@@ -327,6 +331,31 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
             setStreamStatus('');
           }
 
+          function setPlayIcon(isPlaying) {
+            const icon = document.getElementById('play-icon');
+            if (!icon) return;
+            icon.innerHTML = isPlaying
+              ? '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'
+              : '<polygon points="5 3 19 12 5 21 5 3"/>';
+          }
+
+          function showTapFeedback(isPlaying) {
+            if (!tapPlayFeedback) return;
+            tapPlayFeedback.textContent = isPlaying ? '❚❚' : '▶';
+            tapPlayFeedback.classList.add('is-visible');
+            clearTimeout(window.sportTapFeedbackTimer);
+            window.sportTapFeedbackTimer = setTimeout(() => tapPlayFeedback.classList.remove('is-visible'), 420);
+          }
+
+          function updateServerActive(url = activeStreamUrl) {
+            document.querySelectorAll('.stream-server-btn').forEach((button) => {
+              const isActive = button.dataset.url === url || (!button.dataset.url && url === mainStreamUrl);
+              button.classList.toggle('is-active', isActive);
+              button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+            if (streamTestSelect) streamTestSelect.value = url === mainStreamUrl ? '' : url;
+          }
+
           function isHlsUrl(url) {
             return /\\.m3u8(\\?|$|\\/)|format=m3u8/i.test(url);
           }
@@ -340,6 +369,7 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
           function startPlayback() {
             mainPlayer?.play?.().then(() => {
               hideStreamStatus();
+              setPlayIcon(true);
             }).catch(() => {
               setStreamStatus('Clique em play para iniciar a transmissão.');
             });
@@ -390,6 +420,7 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
             if (streamLoaded && url === activeStreamUrl) return;
             streamLoaded = true;
             activeStreamUrl = url;
+            updateServerActive(url);
             setStreamStatus('A carregar transmissão...');
 
             mainPlayer.addEventListener('loadedmetadata', markStreamReady, { once: true });
@@ -470,6 +501,28 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
             });
           }
 
+          if (streamServerList) {
+            hlsTestStreams.forEach(([label, url], index) => {
+              if (!url) return;
+              const button = document.createElement('button');
+              button.type = 'button';
+              button.className = 'stream-server-btn' + (index === 0 ? ' is-active' : '');
+              button.dataset.url = url;
+              button.setAttribute('role', 'option');
+              button.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+              button.innerHTML = '<strong>' + label + '</strong><span>' + (index === 0 ? 'Fonte oficial' : 'Servidor alternativo') + '</span>';
+              button.addEventListener('click', () => switchSportStream(url, label));
+              streamServerList.appendChild(button);
+            });
+          }
+
+          serverPanelToggle?.addEventListener('click', () => {
+            const collapsed = !streamServerPanel?.classList.contains('is-collapsed');
+            streamServerPanel?.classList.toggle('is-collapsed', collapsed);
+            serverPanelToggle.textContent = collapsed ? 'Mostrar' : 'Ocultar';
+            serverPanelToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+          });
+
           if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', loadSportStream);
           } else {
@@ -518,17 +571,31 @@ export function LiveEventPage({ eventId }: LiveEventPageProps) {
           playerContainer?.addEventListener('mouseleave', () => {
             document.getElementById('player-controls').style.display = 'none';
           });
+          mainPlayer?.addEventListener('play', () => setPlayIcon(true));
+          mainPlayer?.addEventListener('pause', () => setPlayIcon(false));
+
+          function toggleMainPlayback(showFeedback = false) {
+            const player = document.getElementById('sport-player');
+            if (!player) return;
+            if (player.paused) {
+              playMainPlayer();
+              setPlayIcon(true);
+              if (showFeedback) showTapFeedback(true);
+            } else {
+              player.pause();
+              setPlayIcon(false);
+              if (showFeedback) showTapFeedback(false);
+            }
+          }
           
           document.getElementById('play-btn')?.addEventListener('click', () => {
-            const player = document.getElementById('sport-player');
-            const icon = document.getElementById('play-icon');
-            if(player?.paused) {
-              playMainPlayer();
-              icon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
-            } else {
-              player?.pause();
-              icon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
-            }
+            toggleMainPlayback(false);
+          });
+
+          playerContainer?.addEventListener('click', (event) => {
+            if (!adSkipped) return;
+            if (event.target.closest('#player-controls, #stream-server-panel, #overlay-ad, button, a, select, input')) return;
+            toggleMainPlayback(true);
           });
           
           document.getElementById('fullscreen-btn')?.addEventListener('click', () => {

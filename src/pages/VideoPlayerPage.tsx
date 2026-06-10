@@ -19,7 +19,7 @@ export function VideoPlayerPage({ videoId }: VideoPlayerPageProps) {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{video.title} | SPORT+</title>
+        <title>{video.title} | sportplus</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
         <link href="/static/style.css" rel="stylesheet" />
         <script src="/static/notifications.js" defer></script>
@@ -180,7 +180,7 @@ export function VideoPlayerPage({ videoId }: VideoPlayerPageProps) {
               <div style="background:linear-gradient(135deg,#111,#1a1a2e);border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:20px;text-align:center">
                 <div style="color:rgba(255,255,255,0.3);font-size:10px;font-weight:600;letter-spacing:1px;margin-bottom:12px">PUBLICIDADE</div>
                 <div style="font-size:40px;margin-bottom:10px">🏆</div>
-                <div style="color:white;font-size:15px;font-weight:700;margin-bottom:6px">SPORT+ PRO</div>
+                <div style="color:white;font-size:15px;font-weight:700;margin-bottom:6px">sportplus PRO</div>
                 <div style="color:rgba(255,255,255,0.5);font-size:12px;margin-bottom:16px">Sem anúncios + 4K + Conteúdo Exclusivo</div>
                 <a href="/cadastro" style="display:block;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;text-decoration:none;padding:10px;border-radius:8px;font-size:13px;font-weight:700">7 Dias Grátis</a>
               </div>

@@ -1,19 +1,8 @@
-# TODO - Melhorias SPORT+ (Admin CRUD real)
-
-## Passo 1
-- [ ] Atualizar `src/pages/admin/AdminDashboard.tsx` para carregar KPIs e lista de `campaigns` via backend endpoints:
-  - `GET /api/admin/stats`
-  - `GET /api/admin/campaigns`
-  - `POST /api/admin/campaigns`
-- [ ] Incluir estados: loading/error/empty na UI do Admin
-
-## Passo 2
-- [ ] (Opcional) Estender CRUD real para outros recursos (events/videos/users/channels) quando endpoints existirem
-
-## Passo 3
-- [ ] Testar manualmente no browser:
-  - Abrir `/admin`
-  - Ver KPIs
-  - Ver tabela de campanhas
-  - Criar campanha
+- [x] Identified LiveEventPage loads HLS from jsDelivr (`https://cdn.jsdelivr.net/npm/hls.js@1/...`) which is blocked by Tracking Prevention.
+- [x] Removed the jsDelivr HLS `<script>` tag from `src/pages/LiveEventPage.tsx`.
+- [ ] Still seeing blocked jsDelivr requests + `Uncaught SyntaxError: Invalid or unexpected token (admin:440)`.
+- [x] Identified AdminDashboard also loads HLS from jsDelivr (`src/pages/admin/AdminDashboard.tsx`).
+- [x] Removed the jsDelivr HLS `<script>` tag from `src/pages/admin/AdminDashboard.tsx`.
+- [ ] Verify runtime: open `/admin` and confirm console no longer shows jsDelivr blocked messages.
+- [ ] If `Invalid or unexpected token (admin:440:81)` persists: inspect generated JS around line ~440 in the served admin script, and fix the offending string interpolation/escaping.
 
