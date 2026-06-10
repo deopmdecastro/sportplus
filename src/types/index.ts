@@ -132,3 +132,25 @@ export interface Campaign {
   targetSports: string[]
   targetCountries: string[]
 }
+
+export interface Game {
+  id: string
+  name: string
+  slug: string
+  category: string
+  cover: string
+  heroImage: string
+  accentColor: string
+  liveStreams: number
+  viewers: number
+  followers: number
+  isFeatured: boolean
+}
+
+export interface PlatformStats {
+  liveStreams: number
+  activeViewers: number
+  games: number
+  creators: number
+  totalViews: number
+}

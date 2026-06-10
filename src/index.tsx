@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { logger } from 'hono/logger'
 import { secureHeaders } from 'hono/secure-headers'
-import { getServerApiBaseUrl, loadEventData, loadHomePageData, loadVideoPageData } from './lib/apiClient'
+import { getServerApiBaseUrl, loadEventData, loadGamesData, loadHomePageData, loadVideoPageData } from './lib/apiClient'
 
 // Pages
 import { HomePage } from './pages/HomePage'
@@ -16,10 +16,11 @@ import { RegisterPage } from './pages/auth/RegisterPage'
 import { ProfilePage } from './pages/profile/ProfilePage'
 import { CreatorDashboard } from './pages/creator/CreatorDashboard'
 import { AdminDashboard } from './pages/admin/AdminDashboard'
+import { GamesCatalogPage } from './pages/GamesCatalogPage'
 
 const app = new Hono()
 const siteUrl = 'https://sportplus.example'
-const publicRoutes = ['/', '/explorar', '/ao-vivo', '/highlights', '/login', '/cadastro', '/criador', '/admin', '/esportes']
+const publicRoutes = ['/', '/explorar', '/ao-vivo', '/highlights', '/login', '/cadastro', '/criador', '/admin', '/esportes', '/games']
 const apiProxyBaseUrl = 'http://localhost:4000'
 
 // ==============================
@@ -97,6 +98,11 @@ app.get('/explorar', (c) => {
 // Highlights
 app.get('/highlights', (c) => {
   return c.html(<HighlightsPage />)
+})
+
+app.get('/games', async (c) => {
+  const games = await loadGamesData(getServerApiBaseUrl(c.env))
+  return c.html(<GamesCatalogPage games={games} />)
 })
 
 // Live Events list

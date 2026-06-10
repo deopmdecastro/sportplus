@@ -8,6 +8,14 @@ insert into sports (id, name, slug, icon, color, "liveCount", "totalEvents") val
   ('10', 'Ciclismo', 'ciclismo', 'bike', '#10b981', 1, 60)
 on conflict (id) do nothing;
 
+insert into games (id, name, slug, category, cover, "heroImage", "accentColor", "liveStreams", viewers, followers, "isFeatured") values
+  ('game_valorant', 'Valorant', 'valorant', 'Tactical FPS', 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=900&q=80', 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1600&q=80', '#ff4655', 42, 184000, 2200000, true),
+  ('game_fortnite', 'Fortnite', 'fortnite', 'Battle Royale', 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=900&q=80', 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1600&q=80', '#7c3aed', 37, 142000, 3100000, true),
+  ('game_cs2', 'Counter-Strike 2', 'counter-strike-2', 'FPS', 'https://images.unsplash.com/photo-1606318313647-17e72e977753?w=900&q=80', 'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=1600&q=80', '#f59e0b', 58, 212000, 2800000, false),
+  ('game_lol', 'League of Legends', 'league-of-legends', 'MOBA', 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=900&q=80', 'https://images.unsplash.com/photo-1542751110-97427bbecf20?w=1600&q=80', '#38bdf8', 64, 268000, 4200000, true),
+  ('game_minecraft', 'Minecraft', 'minecraft', 'Sandbox', 'https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=900&q=80', 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1600&q=80', '#22c55e', 24, 91000, 1900000, false)
+on conflict (id) do nothing;
+
 insert into users (id, name, email, role, plan, "followersCount", "followingCount", "createdAt", "isVerified", avatar) values
   ('admin', 'Admin sportplus', 'admin@sportplus.test', 'admin', 'premium', 0, 0, '2026-06-06', true, null),
   ('1', 'Carlos Drummond', 'carlos@sport.com', 'creator', 'premium', 48200, 120, '2023-01-15', true, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Carlos'),

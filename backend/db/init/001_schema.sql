@@ -23,6 +23,20 @@ create table if not exists sports (
   "totalEvents" integer not null default 0
 );
 
+create table if not exists games (
+  id text primary key default concat('game_', replace(gen_random_uuid()::text, '-', '')),
+  name text not null,
+  slug text not null unique,
+  category text not null default 'Game',
+  cover text not null default '',
+  "heroImage" text not null default '',
+  "accentColor" text not null default '#ef4444',
+  "liveStreams" integer not null default 0,
+  viewers integer not null default 0,
+  followers integer not null default 0,
+  "isFeatured" boolean not null default false
+);
+
 create table if not exists channels (
   id text primary key,
   name text not null,

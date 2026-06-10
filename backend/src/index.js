@@ -58,6 +58,50 @@ let engagementTablesReady = false
 let engagementTablesPromise = null
 let adminEventSchemaReady = false
 let adminEventSchemaPromise = null
+let gamingSchemaReady = false
+let gamingSchemaPromise = null
+
+const seedGames = async () => {
+  await query(
+    `insert into games (id, name, slug, category, cover, "heroImage", "accentColor", "liveStreams", viewers, followers, "isFeatured") values
+      ('game_valorant', 'Valorant', 'valorant', 'Tactical FPS', 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=900&q=80', 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1600&q=80', '#ff4655', 42, 184000, 2200000, true),
+      ('game_fortnite', 'Fortnite', 'fortnite', 'Battle Royale', 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=900&q=80', 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1600&q=80', '#7c3aed', 37, 142000, 3100000, true),
+      ('game_cs2', 'Counter-Strike 2', 'counter-strike-2', 'FPS', 'https://images.unsplash.com/photo-1606318313647-17e72e977753?w=900&q=80', 'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=1600&q=80', '#f59e0b', 58, 212000, 2800000, false),
+      ('game_lol', 'League of Legends', 'league-of-legends', 'MOBA', 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=900&q=80', 'https://images.unsplash.com/photo-1542751110-97427bbecf20?w=1600&q=80', '#38bdf8', 64, 268000, 4200000, true),
+      ('game_minecraft', 'Minecraft', 'minecraft', 'Sandbox', 'https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=900&q=80', 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1600&q=80', '#22c55e', 24, 91000, 1900000, false)
+     on conflict (id) do nothing`,
+  )
+}
+
+const ensureGamingSchema = async () => {
+  if (gamingSchemaReady) return
+  if (!gamingSchemaPromise) {
+    gamingSchemaPromise = (async () => {
+      await query(`
+        create table if not exists games (
+          id text primary key default concat('game_', replace(gen_random_uuid()::text, '-', '')),
+          name text not null,
+          slug text not null unique,
+          category text not null default 'Game',
+          cover text not null default '',
+          "heroImage" text not null default '',
+          "accentColor" text not null default '#ef4444',
+          "liveStreams" integer not null default 0,
+          viewers integer not null default 0,
+          followers integer not null default 0,
+          "isFeatured" boolean not null default false
+        )
+      `)
+      await seedGames()
+      gamingSchemaReady = true
+    })().catch((error) => {
+      gamingSchemaPromise = null
+      throw error
+    })
+  }
+
+  await gamingSchemaPromise
+}
 
 const ensureAdminEventSchema = async () => {
   if (adminEventSchemaReady) return
@@ -444,6 +488,55 @@ api.get('/sports/:slug', async (c) => {
 
   const events = await query('select * from event_details where sport->>$1 = $2 order by "startTime"', ['slug', sport.slug])
   return c.json({ success: true, data: { ...sport, events: events.map(mapRecord) } })
+})
+
+api.get('/games', async (c) => {
+  await ensureGamingSchema()
+  const games = await query('select * from games order by viewers desc, "liveStreams" desc, name')
+  return c.json({ success: true, data: games.map(mapRecord), total: games.length })
+})
+
+api.get('/games/trending', async (c) => {
+  await ensureGamingSchema()
+  const limit = toNumber(c.req.query('limit'), 10)
+  const games = await query(
+    'select * from games order by "isFeatured" desc, viewers desc, "liveStreams" desc limit $1',
+    [limit],
+  )
+  return c.json({ success: true, data: games.map(mapRecord), total: games.length })
+})
+
+api.get('/games/:slug', async (c) => {
+  await ensureGamingSchema()
+  const [game] = await query('select * from games where slug = $1 or id = $1', [c.req.param('slug')])
+  if (!game) return c.json({ success: false, error: 'Game not found' }, 404)
+  return c.json({ success: true, data: mapRecord(game) })
+})
+
+api.get('/streams/live', async (c) => {
+  await ensureEngagementTables()
+  const streams = await query(
+    `select event_details.*, coalesce(ev."realViews", 0)::int as "realViews", coalesce(el."realLikes", 0)::int as "realLikes"
+     from event_details ${eventEngagementJoins}
+     where status = $1
+     order by (viewers + coalesce(ev."realViews", 0)) desc`,
+    ['live'],
+  )
+  return c.json({ success: true, data: streams.map(mapEventRecord), total: streams.length })
+})
+
+api.get('/platform/stats', async (c) => {
+  await ensureGamingSchema()
+  await ensureEngagementTables()
+  const [stats] = await query(`
+    select
+      (select count(*)::int from events where status = 'live') as "liveStreams",
+      (select coalesce(sum(viewers), 0)::int from events where status = 'live') as "activeViewers",
+      (select count(*)::int from games) as games,
+      (select count(*)::int from channels) as creators,
+      (select coalesce(sum(views), 0)::int from events) + (select coalesce(sum(views), 0)::int from videos) as "totalViews"
+  `)
+  return c.json({ success: true, data: mapRecord(stats) })
 })
 
 api.get('/channels', async (c) => {

@@ -3244,3 +3244,195 @@ body[data-admin-section="events"] .admin-modal-actions {
     padding: 0 12px;
   }
 }
+
+/* Premium gaming streaming layer */
+.gaming-hero {
+  border-bottom: 1px solid color-mix(in srgb, var(--game-accent, #ef4444) 35%, rgba(255, 255, 255, 0.08));
+}
+
+.gaming-hero .stream-live-chip {
+  background: color-mix(in srgb, var(--game-accent, #ef4444) 22%, rgba(255, 255, 255, 0.08));
+  border-color: color-mix(in srgb, var(--game-accent, #ef4444) 45%, rgba(255, 255, 255, 0.12));
+}
+
+.gaming-stats-row {
+  max-width: 1500px;
+  margin: -36px auto 44px;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  position: relative;
+  z-index: 3;
+}
+
+.gaming-stat-tile {
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025));
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+.gaming-stat-tile strong,
+.gaming-stat-tile span {
+  display: block;
+}
+
+.gaming-stat-tile strong {
+  color: #fff;
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 900;
+}
+
+.gaming-stat-tile span {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.gaming-pill {
+  border-color: rgba(124, 58, 237, 0.36);
+}
+
+.gaming-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.gaming-card {
+  position: relative;
+  display: block;
+  min-height: 290px;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0d1018;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gaming-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--game-accent, #ef4444) 58%, rgba(255, 255, 255, 0.14));
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.38);
+}
+
+.gaming-card img {
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+  display: block;
+  filter: saturate(1.08) contrast(1.04);
+}
+
+.gaming-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 46%;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.86));
+  pointer-events: none;
+}
+
+.gaming-card div {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  padding: 16px;
+}
+
+.gaming-card strong,
+.gaming-card span,
+.gaming-card small {
+  display: block;
+}
+
+.gaming-card strong {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.gaming-card span {
+  margin-top: 4px;
+  color: color-mix(in srgb, var(--game-accent, #ef4444) 45%, #fff);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.gaming-card small {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gaming-catalog-hero {
+  min-height: 520px;
+  display: flex;
+  align-items: flex-end;
+  padding: 120px 24px 72px;
+  background:
+    linear-gradient(90deg, rgba(5, 6, 10, 0.96), rgba(5, 6, 10, 0.55), rgba(5, 6, 10, 0.92)),
+    var(--game-hero) center/cover no-repeat;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gaming-catalog-hero > div {
+  width: min(1500px, 100%);
+  margin: 0 auto;
+}
+
+.gaming-catalog-hero span {
+  display: inline-flex;
+  color: color-mix(in srgb, var(--game-accent, #ef4444) 60%, #fff);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.gaming-catalog-hero h1 {
+  margin: 12px 0 12px;
+  max-width: 740px;
+  color: #fff;
+  font-size: clamp(46px, 8vw, 96px);
+  line-height: 0.92;
+  font-weight: 950;
+}
+
+.gaming-catalog-hero p {
+  max-width: 540px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.gaming-catalog-hero a {
+  display: inline-flex;
+  margin-top: 24px;
+  padding: 13px 20px;
+  border-radius: 10px;
+  background: var(--game-accent, #ef4444);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 900;
+}
+
+@media (max-width: 760px) {
+  .gaming-stats-row {
+    grid-template-columns: 1fr;
+    margin-top: 18px;
+  }
+
+  .gaming-catalog-hero {
+    min-height: 440px;
+    padding-top: 96px;
+  }
+}
